@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistics - Attendance App</title>
+    <link rel="stylesheet" href="statistics.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <a href="index.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="page-title">STATISTICS</h1>
+            <div class="header-actions">
+                <button class="icon-btn" onclick="exportData()">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Month Selector -->
+        <div class="month-selector">
+            <button class="month-nav" onclick="changeMonth(-1)">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <div class="month-display">
+                <span id="current-month">February</span>
+                <span id="current-year">2026</span>
+            </div>
+            <button class="month-nav" onclick="changeMonth(1)">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="stats-grid">
+            <div class="stat-card present">
+                <div class="stat-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="present-days">0</span>
+                    <span class="stat-label">Present Days</span>
+                </div>
+                <div class="stat-trend" id="present-percent">
+                    <i class="fas fa-arrow-up"></i> 0%
+                </div>
+            </div>
+
+            <div class="stat-card absent">
+                <div class="stat-icon">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="absent-days">0</span>
+                    <span class="stat-label">Absent Days</span>
+                </div>
+                <div class="stat-trend down" id="absent-percent">
+                    <i class="fas fa-arrow-down"></i> 0%
+                </div>
+            </div>
+
+            <div class="stat-card total">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="working-days">0</span>
+                    <span class="stat-label">Working Days</span>
+                </div>
+                <div class="stat-badge" id="today-date">Today</div>
+            </div>
+
+            <div class="stat-card hours">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-value" id="avg-hours">0h</span>
+                    <span class="stat-label">Avg Daily Hours</span>
+                </div>
+                <div class="stat-trend" id="hours-trend">
+                    <i class="fas fa-minus"></i> 0%
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Overview Chart -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>Attendance Overview</h3>
+                <div class="legend">
+                    <span><i class="fas fa-circle present"></i> Present</span>
+                    <span><i class="fas fa-circle absent"></i> Absent</span>
+                    <span><i class="fas fa-circle half"></i> Half Day</span>
+                </div>
+            </div>
+            <div class="donut-chart-wrapper">
+                <svg class="donut-chart" viewBox="0 0 200 200">
+                    <circle class="donut-bg" cx="100" cy="100" r="80"/>
+                    <circle class="donut-segment present-segment" cx="100" cy="100" r="80"/>
+                    <circle class="donut-segment absent-segment" cx="100" cy="100" r="80"/>
+                    <circle class="donut-segment half-segment" cx="100" cy="100" r="80"/>
+                </svg>
+                <div class="donut-center">
+                    <span class="donut-value" id="attendance-rate">0%</span>
+                    <span class="donut-label">Attendance</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Hours Trend -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <h3>Weekly Work Hours Trend</h3>
+                <span class="chart-subtitle">Last 4 weeks</span>
+            </div>
+            <div class="bar-chart" id="weekly-chart">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+
+        <!-- Insights Card -->
+        <div class="insights-card">
+            <div class="insights-header">
+                <i class="fas fa-lightbulb"></i>
+                <h3>Monthly Insights</h3>
+            </div>
+            <div class="insights-list" id="insights-list">
+                <!-- Generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="statistics.js"></script>
+</body>
+</html>

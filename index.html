@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance App</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <h1 class="logo-text">AARAMBH</h1>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+                <button class="icon-btn notification">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge">2</span>
+                </button>
+                <button class="icon-btn">
+                    <i class="fas fa-user"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="hero-section">
+                <h2 class="hero-title">ITS <span class="highlight">ATTENDANCE TIME</span></h2>
+                <p class="hero-subtitle">Select your attendance operation</p>
+            </div>
+
+            <!-- Action Cards -->
+            <div class="cards-container">
+                <div class="action-card" onclick="handleAction('check-in')">
+                    <div class="card-icon green">
+                        <i class="fas fa-sign-in-alt"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Check In</h3>
+                        <p>Mark your arrival</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="handleAction('check-out')">
+                    <div class="card-icon blue">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Check Out</h3>
+                        <p>Mark your departure</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="window.location.href='history.html'">
+                    <div class="card-icon orange">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>History</h3>
+                        <p>View past records</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </div>
+
+                <div class="action-card" onclick="window.location.href='statistics.html'">
+                    <div class="card-icon pink">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3>Statistics</h3>
+                        <p>Analytics & Reports</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Section -->
+            <div class="status-section">
+                <div class="status-card">
+                    <div class="status-header">
+                        <h4>Today's Status</h4>
+                        <span class="status-badge" id="status-badge">Not Checked In</span>
+                    </div>
+                    <div class="status-details">
+                        <div class="status-item">
+                            <i class="fas fa-clock"></i>
+                            <span id="current-time">--:--</span>
+                        </div>
+                        <div class="status-item">
+                            <i class="fas fa-calendar"></i>
+                            <span id="current-date">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast">
+            <div class="toast-content">
+                <i class="fas fa-check-circle"></i>
+                <span id="toast-message">Action completed!</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
