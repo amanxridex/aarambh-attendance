@@ -1,5 +1,72 @@
 // Auth state
 let isLoading = false;
+let isManagementMode = false;
+
+// Toggle between Employee and Management login
+function toggleLoginMode() {
+    const toggle = document.getElementById('login-mode');
+    const modeText = document.getElementById('mode-text');
+    const empLabel = document.getElementById('emp-label');
+    const mgmtLabel = document.getElementById('mgmt-label');
+    const body = document.body;
+    const demoCreds = document.getElementById('demo-creds');
+    
+    isManagementMode = toggle.checked;
+    
+    if (isManagementMode) {
+        // Management Mode
+        modeText.innerHTML = '<i class="fas fa-user-tie"></i><span>Management Login</span>';
+        modeText.classList.add('management');
+        body.classList.add('mode-management');
+        empLabel.classList.remove('active');
+        mgmtLabel.classList.add('active');
+        
+        // Update demo credentials
+        demoCreds.innerHTML = `
+            <div class="demo-header">
+                <i class="fas fa-info-circle"></i>
+                <span>Demo Credentials</span>
+            </div>
+            <div class="demo-list">
+                <div class="demo-item">
+                    <span class="demo-user">admin / admin123</span>
+                    <span class="demo-type">Management</span>
+                </div>
+            </div>
+        `;
+        
+        // Update input placeholders
+        document.getElementById('username').placeholder = 'Enter admin username';
+    } else {
+        // Employee Mode
+        modeText.innerHTML = '<i class="fas fa-user"></i><span>Employee Login</span>';
+        modeText.classList.remove('management');
+        body.classList.remove('mode-management');
+        empLabel.classList.add('active');
+        mgmtLabel.classList.remove('active');
+        
+        // Update demo credentials
+        demoCreds.innerHTML = `
+            <div class="demo-header">
+                <i class="fas fa-info-circle"></i>
+                <span>Demo Credentials</span>
+            </div>
+            <div class="demo-list">
+                <div class="demo-item">
+                    <span class="demo-user">user / user123</span>
+                    <span class="demo-type">Employee</span>
+                </div>
+            </div>
+        `;
+        
+        // Update input placeholders
+        document.getElementById('username').placeholder = 'Enter your username';
+    }
+    
+    // Clear inputs
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+}
 
 // Toggle password visibility
 function togglePassword() {
@@ -45,25 +112,48 @@ function handleLogin(event) {
     
     // Simulate API call
     setTimeout(() => {
-        // Check credentials (demo: admin/admin123 or user/user123)
-        const validCredentials = [
-            { username: 'admin', password: 'admin123', name: 'Administrator' },
-            { username: 'user', password: 'user123', name: 'John Doe' },
-            { username: 'test', password: 'test123', name: 'Test User' }
-        ];
+        let user = null;
+        let redirectUrl = '';
         
-        const user = validCredentials.find(u => 
-            u.username === username.toLowerCase() && u.password === password
-        );
+        if (isManagementMode) {
+            // Management Credentials Check
+            const managementCreds = [
+                { username: 'admin', password: 'admin123', name: 'Administrator', role: 'management' },
+                { username: 'manager', password: 'manager123', name: 'Manager', role: 'management' },
+                { username: 'hr', password: 'hr123', name: 'HR Manager', role: 'management' }
+            ];
+            
+            user = managementCreds.find(u => 
+                u.username === username.toLowerCase() && u.password === password
+            );
+            
+            redirectUrl = 'dashboard.html';
+        } else {
+            // Employee Credentials Check
+            const employeeCreds = [
+                { username: 'user', password: 'user123', name: 'John Doe', role: 'employee', empId: 'EMP001' },
+                { username: 'john', password: 'john123', name: 'John Smith', role: 'employee', empId: 'EMP002' },
+                { username: 'jane', password: 'jane123', name: 'Jane Doe', role: 'employee', empId: 'EMP003' }
+            ];
+            
+            user = employeeCreds.find(u => 
+                u.username === username.toLowerCase() && u.password === password
+            );
+            
+            redirectUrl = 'index.html';
+        }
         
         if (user) {
-            // Success
+            // Success - Store auth data
             const authData = {
                 username: user.username,
                 name: user.name,
+                role: user.role,
                 loginTime: new Date().toISOString(),
                 remember: remember
             };
+            
+            if (user.empId) authData.empId = user.empId;
             
             if (remember) {
                 localStorage.setItem('auth_user', JSON.stringify(authData));
@@ -73,15 +163,19 @@ function handleLogin(event) {
             
             showToast(`Welcome back, ${user.name}!`);
             
-            // Redirect to main app
+            // Redirect based on role
             setTimeout(() => {
-                window.location.href = 'index.html';
+                window.location.href = redirectUrl;
             }, 1500);
         } else {
             // Failed
             isLoading = false;
             submitBtn.classList.remove('loading');
-            showError('Invalid username or password');
+            
+            const errorMsg = isManagementMode ? 
+                'Invalid management credentials' : 
+                'Invalid employee credentials';
+            showError(errorMsg);
             
             // Shake animation
             const authCard = document.querySelector('.auth-card');
@@ -117,34 +211,35 @@ function showError(message) {
     }, 3000);
 }
 
-// Social login handlers
-function socialLogin(provider) {
-    showToast(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login coming soon!`);
-}
-
 // Show forgot password
 function showForgotPassword() {
-    showToast('Password reset link sent to your email!');
+    const contact = isManagementMode ? 'IT Administrator' : 'HR Department';
+    showToast(`Contact ${contact} for password reset`);
 }
 
-// Show sign up
-function showSignUp() {
-    showToast('Registration page coming soon!');
-}
-
-// Check if already logged in
+// Check if already logged in and redirect accordingly
 function checkExistingAuth() {
     const authUser = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
     if (authUser) {
-        // Optional: Auto-redirect if already logged in
-        // window.location.href = 'index.html';
+        const user = JSON.parse(authUser);
+        // Redirect based on stored role
+        if (user.role === 'management') {
+            window.location.href = 'dashboard.html';
+        } else {
+            window.location.href = 'index.html';
+        }
     }
 }
 
 // Input focus effects
 document.querySelectorAll('.input-wrapper input').forEach(input => {
     input.addEventListener('focus', function() {
-        this.parentElement.querySelector('.input-icon').style.color = 'var(--accent-green)';
+        const icon = this.parentElement.querySelector('.input-icon');
+        if (isManagementMode) {
+            icon.style.color = 'var(--accent-blue)';
+        } else {
+            icon.style.color = 'var(--accent-green)';
+        }
     });
     
     input.addEventListener('blur', function() {
@@ -157,6 +252,9 @@ document.querySelectorAll('.input-wrapper input').forEach(input => {
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     checkExistingAuth();
+    
+    // Set initial state
+    document.getElementById('emp-label').classList.add('active');
     
     // Add enter key support
     document.getElementById('password').addEventListener('keypress', (e) => {

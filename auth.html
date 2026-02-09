@@ -29,6 +29,23 @@
                 <p>Sign in to continue</p>
             </div>
 
+            <!-- Login Mode Toggle -->
+            <div class="login-mode-toggle">
+                <span class="toggle-label" id="emp-label">Employee</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="login-mode" onchange="toggleLoginMode()">
+                    <span class="toggle-slider">
+                        <i class="fas fa-user"></i>
+                    </span>
+                </label>
+                <span class="toggle-label" id="mgmt-label">Management</span>
+            </div>
+
+            <div class="mode-indicator" id="mode-text">
+                <i class="fas fa-user"></i>
+                <span>Employee Login</span>
+            </div>
+
             <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
                 <!-- Username Input -->
                 <div class="input-group">
@@ -85,27 +102,18 @@
                 </button>
             </form>
 
-            <!-- Divider -->
-            <div class="divider">
-                <span>or continue with</span>
-            </div>
-
-            <!-- Social Login -->
-            <div class="social-login">
-                <button class="social-btn google" onclick="socialLogin('google')">
-                    <i class="fab fa-google"></i>
-                </button>
-                <button class="social-btn apple" onclick="socialLogin('apple')">
-                    <i class="fab fa-apple"></i>
-                </button>
-                <button class="social-btn microsoft" onclick="socialLogin('microsoft')">
-                    <i class="fab fa-microsoft"></i>
-                </button>
-            </div>
-
-            <!-- Sign Up Link -->
-            <div class="auth-footer">
-                <p>Don't have an account? <a href="#" onclick="showSignUp()">Sign Up</a></p>
+            <!-- Demo Credentials -->
+            <div class="demo-credentials" id="demo-creds">
+                <div class="demo-header">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Demo Credentials</span>
+                </div>
+                <div class="demo-list">
+                    <div class="demo-item">
+                        <span class="demo-user">user / user123</span>
+                        <span class="demo-type">Employee</span>
+                    </div>
+                </div>
             </div>
         </div>
 

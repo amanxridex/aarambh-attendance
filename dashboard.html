@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Management Dashboard - Attendance App</title>
+    <link rel="stylesheet" href="dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="header-title">
+                    <h1>ADMIN DASHBOARD</h1>
+                    <span>Management Portal</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" onclick="showNotifications()">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge">3</span>
+                </button>
+                <button class="icon-btn profile" onclick="goToProfile()">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" alt="Admin">
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Overview -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-number" id="total-employees">24</span>
+                <span class="stat-label">Total Employees</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-number present" id="present-today">18</span>
+                <span class="stat-label">Present Today</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-number absent" id="absent-today">4</span>
+                <span class="stat-label">Absent Today</span>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="stat-item">
+                <span class="stat-number pending" id="pending-leaves">2</span>
+                <span class="stat-label">Pending Leaves</span>
+            </div>
+        </div>
+
+        <!-- Main Action Cards -->
+        <div class="dashboard-grid">
+            <!-- Create Employee Card -->
+            <div class="dashboard-card create-card" onclick="openCreateEmployee()">
+                <div class="card-glow"></div>
+                <div class="card-content">
+                    <div class="card-icon">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="card-info">
+                        <h2>Create Employee</h2>
+                        <p>Add new team member to the system</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </div>
+                <div class="card-stats">
+                    <span><i class="fas fa-users"></i> Last added: Today</span>
+                </div>
+            </div>
+
+            <!-- Employee Attendance Details Card -->
+            <div class="dashboard-card attendance-card" onclick="openAttendanceDetails()">
+                <div class="card-glow"></div>
+                <div class="card-content">
+                    <div class="card-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <div class="card-info">
+                        <h2>Attendance Details</h2>
+                        <p>View and manage employee attendance</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </div>
+                <div class="card-stats">
+                    <span><i class="fas fa-chart-line"></i> 94% Avg Attendance</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <h3>Quick Actions</h3>
+            <div class="action-chips">
+                <button class="action-chip" onclick="exportReport()">
+                    <i class="fas fa-download"></i>
+                    Export Report
+                </button>
+                <button class="action-chip" onclick="bulkNotify()">
+                    <i class="fas fa-bullhorn"></i>
+                    Bulk Notify
+                </button>
+                <button class="action-chip" onclick="viewCalendar()">
+                    <i class="fas fa-calendar"></i>
+                    View Calendar
+                </button>
+                <button class="action-chip" onclick="settings()">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </button>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="recent-activity">
+            <div class="section-header">
+                <h3>Recent Activity</h3>
+                <a href="#" onclick="viewAllActivity()">View All</a>
+            </div>
+            <div class="activity-list" id="activity-list">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Employee Modal -->
+    <div class="modal" id="create-modal">
+        <div class="modal-overlay" onclick="closeCreateModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Employee</h2>
+                <button class="close-btn" onclick="closeCreateModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form class="create-form" onsubmit="saveEmployee(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="emp-name" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Employee ID</label>
+                        <input type="text" id="emp-id" placeholder="EMP001" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="emp-email" placeholder="john@company.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Mobile</label>
+                        <input type="tel" id="emp-mobile" placeholder="+91 98765 43210" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Department</label>
+                        <select id="emp-dept" required>
+                            <option value="">Select Department</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Design">Design</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="HR">HR</option>
+                            <option value="Sales">Sales</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Designation</label>
+                        <input type="text" id="emp-designation" placeholder="Software Engineer" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Join Date</label>
+                        <input type="date" id="emp-join-date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Shift Timing</label>
+                        <select id="emp-shift" required>
+                            <option value="">Select Shift</option>
+                            <option value="9-6">9:00 AM - 6:00 PM</option>
+                            <option value="10-7">10:00 AM - 7:00 PM</option>
+                            <option value="night">Night Shift</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeCreateModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Create Employee
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Attendance Details Modal -->
+    <div class="modal" id="attendance-modal">
+        <div class="modal-overlay" onclick="closeAttendanceModal()"></div>
+        <div class="modal-content wide">
+            <div class="modal-header">
+                <h2>Employee Attendance Details</h2>
+                <div class="header-tools">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search employee..." id="search-emp">
+                    </div>
+                    <button class="close-btn" onclick="closeAttendanceModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="attendance-filters">
+                <button class="filter-btn active" onclick="filterAttendance('all')">All</button>
+                <button class="filter-btn present" onclick="filterAttendance('present')">Present</button>
+                <button class="filter-btn absent" onclick="filterAttendance('absent')">Absent</button>
+                <button class="filter-btn leave" onclick="filterAttendance('leave')">On Leave</button>
+                <input type="date" class="date-picker" id="attendance-date" onchange="loadAttendanceData()">
+            </div>
+
+            <div class="attendance-table-container">
+                <table class="attendance-table">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>ID</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Check In</th>
+                            <th>Check Out</th>
+                            <th>Duration</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendance-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="modal-footer">
+                <span id="showing-text">Showing 10 of 24 employees</span>
+                <div class="pagination">
+                    <button onclick="prevPage()"><i class="fas fa-chevron-left"></i></button>
+                    <span>Page 1 of 3</span>
+                    <button onclick="nextPage()"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>
