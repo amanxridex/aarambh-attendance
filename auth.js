@@ -1,3 +1,10 @@
+// Supabase Configuration - REPLACE THESE WITH YOUR ACTUAL VALUES
+const SUPABASE_URL = 'https://zbfgytxlnnddkurhiziy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZmd5dHhsbm5kZGt1cmhpeml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMjkxODksImV4cCI6MjA4NjgwNTE4OX0.RKsFVWA1gktyXa1BqRqYv_i6_74OnEHdJatg03WeDMM';
+
+// Initialize Supabase client - use window.supabase
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // Auth state
 let isLoading = false;
 let isManagementMode = false;
@@ -59,16 +66,23 @@ async function handleLogin(event) {
     const remember = document.getElementById('remember').checked;
     const submitBtn = document.getElementById('submit-btn');
     
+    // Validation
     if (!email || !password) {
         showError('Please fill in all fields');
         return;
     }
     
+    if (password.length < 6) {
+        showError('Password must be at least 6 characters');
+        return;
+    }
+    
+    // Start loading
     isLoading = true;
     submitBtn.classList.add('loading');
     
     try {
-        // Sign in with Supabase Auth
+        // Sign in with Supabase Auth first
         const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
             email: email,
             password: password
@@ -101,12 +115,7 @@ async function handleLogin(event) {
             remember: remember
         };
         
-        if (remember) {
-            localStorage.setItem('aarambh_session', JSON.stringify(sessionData));
-        } else {
-            sessionStorage.setItem('aarambh_session', JSON.stringify(sessionData));
-        }
-        
+        storeSession(sessionData, remember);
         showToast(`Welcome back, ${adminData?.name || user.email}!`);
         
         // Redirect based on role
@@ -120,13 +129,14 @@ async function handleLogin(event) {
         submitBtn.classList.remove('loading');
         showError(error.message || 'Login failed. Please try again.');
         
+        // Shake animation
         const authCard = document.querySelector('.auth-card');
         authCard.classList.add('shake');
         setTimeout(() => authCard.classList.remove('shake'), 500);
     }
 }
 
-// Store session
+// Store session in localStorage or sessionStorage
 function storeSession(data, remember) {
     if (remember) {
         localStorage.setItem('aarambh_session', JSON.stringify(data));
@@ -135,7 +145,7 @@ function storeSession(data, remember) {
     }
 }
 
-// Show toast
+// Show success toast
 function showToast(message) {
     const toast = document.getElementById('toast');
     document.getElementById('toast-message').textContent = message;
@@ -143,7 +153,7 @@ function showToast(message) {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// Show error
+// Show error toast
 function showError(message) {
     const toast = document.getElementById('error-toast');
     document.getElementById('error-message').textContent = message;
@@ -151,7 +161,7 @@ function showError(message) {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// Forgot password
+// Show forgot password
 async function showForgotPassword() {
     const email = document.getElementById('email').value;
     
@@ -163,7 +173,7 @@ async function showForgotPassword() {
     try {
         const { error } = await supabase.auth.resetPasswordForEmail(email);
         if (error) throw error;
-        showToast('Password reset link sent!');
+        showToast('Password reset link sent to your email!');
     } catch (error) {
         showError('Failed to send reset link');
     }
@@ -186,7 +196,7 @@ async function checkExistingSession() {
     }
 }
 
-// Logout
+// Logout function (can be called from other pages)
 async function logout() {
     await supabase.auth.signOut();
     localStorage.removeItem('aarambh_session');
@@ -199,7 +209,10 @@ document.addEventListener('DOMContentLoaded', () => {
     checkExistingSession();
     document.getElementById('emp-label').classList.add('active');
     
+    // Add enter key support
     document.getElementById('password').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleLogin(e);
+        if (e.key === 'Enter') {
+            handleLogin(e);
+        }
     });
 });
