@@ -1,10 +1,3 @@
-// Supabase Configuration - REPLACE THESE WITH YOUR ACTUAL VALUES
-const SUPABASE_URL = 'https://zbfgytxlnnddkurhiziy.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZmd5dHhsbm5kZGt1cmhpeml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMjkxODksImV4cCI6MjA4NjgwNTE4OX0.RKsFVWA1gktyXa1BqRqYv_i6_74OnEHdJatg03WeDMM';
-
-// Initialize Supabase client
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 // Auth state
 let isLoading = false;
 let isManagementMode = false;
@@ -66,93 +59,60 @@ async function handleLogin(event) {
     const remember = document.getElementById('remember').checked;
     const submitBtn = document.getElementById('submit-btn');
     
-    // Validation
     if (!email || !password) {
         showError('Please fill in all fields');
         return;
     }
     
-    if (password.length < 6) {
-        showError('Password must be at least 6 characters');
-        return;
-    }
-    
-    // Start loading
     isLoading = true;
     submitBtn.classList.add('loading');
     
     try {
-        if (isManagementMode) {
-            // Management Login - Check if user has admin role in database
-            const { data: adminData, error: adminError } = await supabase
-                .from('admins')
-                .select('*')
-                .eq('email', email)
-                .single();
-            
-            if (adminError || !adminData) {
-                throw new Error('Invalid management credentials');
-            }
-            
-            // Verify password (in production, use proper hashing)
-            // For demo, we'll use Supabase Auth
-            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password
-            });
-            
-            if (authError) throw authError;
-            
-            // Store management session
-            const sessionData = {
-                user: authData.user,
-                role: 'management',
-                adminData: adminData,
-                remember: remember
-            };
-            
-            storeSession(sessionData, remember);
-            showToast(`Welcome back, ${adminData.name || 'Admin'}!`);
-            
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 1500);
-            
-        } else {
-            // Employee Login
-            const { data: empData, error: empError } = await supabase
-                .from('employees')
-                .select('*')
-                .eq('email', email)
-                .single();
-            
-            if (empError || !empData) {
-                throw new Error('Employee not found');
-            }
-            
-            // Sign in with Supabase Auth
-            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password
-            });
-            
-            if (authError) throw authError;
-            
-            // Store employee session
-            const sessionData = {
-                user: authData.user,
-                role: 'employee',
-                empData: empData,
-                remember: remember
-            };
-            
-            storeSession(sessionData, remember);
-            showToast(`Welcome back, ${empData.name}!`);
-            
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500);
+        // Sign in with Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
+        
+        if (authError) throw authError;
+        
+        const user = authData.user;
+        
+        // Check if user is admin (management)
+        const { data: adminData, error: adminError } = await supabase
+            .from('admins')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+        
+        const isAdmin = !adminError && adminData;
+        
+        // Validate mode
+        if (isManagementMode && !isAdmin) {
+            await supabase.auth.signOut();
+            throw new Error('You do not have management access');
         }
+        
+        // Store session
+        const sessionData = {
+            user: user,
+            role: isAdmin ? 'management' : 'employee',
+            profile: isAdmin ? adminData : null,
+            remember: remember
+        };
+        
+        if (remember) {
+            localStorage.setItem('aarambh_session', JSON.stringify(sessionData));
+        } else {
+            sessionStorage.setItem('aarambh_session', JSON.stringify(sessionData));
+        }
+        
+        showToast(`Welcome back, ${adminData?.name || user.email}!`);
+        
+        // Redirect based on role
+        setTimeout(() => {
+            window.location.href = isAdmin ? 'dashboard.html' : 'index.html';
+        }, 1500);
         
     } catch (error) {
         console.error('Login error:', error);
@@ -160,14 +120,13 @@ async function handleLogin(event) {
         submitBtn.classList.remove('loading');
         showError(error.message || 'Login failed. Please try again.');
         
-        // Shake animation
         const authCard = document.querySelector('.auth-card');
         authCard.classList.add('shake');
         setTimeout(() => authCard.classList.remove('shake'), 500);
     }
 }
 
-// Store session in localStorage or sessionStorage
+// Store session
 function storeSession(data, remember) {
     if (remember) {
         localStorage.setItem('aarambh_session', JSON.stringify(data));
@@ -176,7 +135,7 @@ function storeSession(data, remember) {
     }
 }
 
-// Show success toast
+// Show toast
 function showToast(message) {
     const toast = document.getElementById('toast');
     document.getElementById('toast-message').textContent = message;
@@ -184,7 +143,7 @@ function showToast(message) {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// Show error toast
+// Show error
 function showError(message) {
     const toast = document.getElementById('error-toast');
     document.getElementById('error-message').textContent = message;
@@ -192,7 +151,7 @@ function showError(message) {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// Show forgot password
+// Forgot password
 async function showForgotPassword() {
     const email = document.getElementById('email').value;
     
@@ -204,7 +163,7 @@ async function showForgotPassword() {
     try {
         const { error } = await supabase.auth.resetPasswordForEmail(email);
         if (error) throw error;
-        showToast('Password reset link sent to your email!');
+        showToast('Password reset link sent!');
     } catch (error) {
         showError('Failed to send reset link');
     }
@@ -212,30 +171,22 @@ async function showForgotPassword() {
 
 // Check existing session
 async function checkExistingSession() {
-    const session = localStorage.getItem('aarambh_session') || sessionStorage.getItem('aarambh_session');
+    const { data: { session } } = await supabase.auth.getSession();
     
     if (session) {
-        const data = JSON.parse(session);
-        
-        // Verify session with Supabase
-        const { data: { user }, error } = await supabase.auth.getUser();
-        
-        if (user && !error) {
-            // Valid session, redirect
+        const saved = localStorage.getItem('aarambh_session') || sessionStorage.getItem('aarambh_session');
+        if (saved) {
+            const data = JSON.parse(saved);
             if (data.role === 'management') {
                 window.location.href = 'dashboard.html';
             } else {
                 window.location.href = 'index.html';
             }
-        } else {
-            // Invalid session, clear storage
-            localStorage.removeItem('aarambh_session');
-            sessionStorage.removeItem('aarambh_session');
         }
     }
 }
 
-// Logout function (can be called from other pages)
+// Logout
 async function logout() {
     await supabase.auth.signOut();
     localStorage.removeItem('aarambh_session');
@@ -248,10 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkExistingSession();
     document.getElementById('emp-label').classList.add('active');
     
-    // Add enter key support
     document.getElementById('password').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            handleLogin(e);
-        }
+        if (e.key === 'Enter') handleLogin(e);
     });
 });
