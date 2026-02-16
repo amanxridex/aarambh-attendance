@@ -923,3 +923,35 @@ body {
         width: 100%;
     }
 }
+
+.help-text {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.text-center {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 20px;
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 40px;
+    font-size: 14px;
+}
+
+.btn-primary.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.btn-primary.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
