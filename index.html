@@ -123,6 +123,63 @@
         </div>
     </div>
 
+        <!-- Selfie Capture Modal -->
+    <div class="modal" id="selfie-modal">
+        <div class="modal-overlay" onclick="closeSelfieModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-camera"></i> Capture Selfie</h3>
+                <button class="close-btn" onclick="closeSelfieModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="camera-container">
+                <div class="camera-frame">
+                    <video id="camera-video" autoplay playsinline></video>
+                    <canvas id="camera-canvas" style="display: none;"></canvas>
+                    <img id="captured-image" style="display: none;" alt="Captured">
+                    
+                    <!-- Camera overlay guide -->
+                    <div class="camera-overlay">
+                        <div class="face-guide"></div>
+                        <p class="guide-text">Position your face in the circle</p>
+                    </div>
+                    
+                    <!-- Timestamp overlay -->
+                    <div class="timestamp-overlay" id="camera-timestamp">
+                        --:--:--
+                    </div>
+                </div>
+                
+                <!-- Camera controls -->
+                <div class="camera-controls" id="camera-controls">
+                    <button class="capture-btn" onclick="captureSelfie()" id="capture-btn">
+                        <div class="capture-ring"></div>
+                    </button>
+                </div>
+                
+                <!-- Preview controls -->
+                <div class="preview-controls" id="preview-controls" style="display: none;">
+                    <button class="retake-btn" onclick="retakeSelfie()">
+                        <i class="fas fa-redo"></i>
+                        Retake
+                    </button>
+                    <button class="submit-btn-camera" onclick="submitCheckIn()">
+                        <i class="fas fa-check"></i>
+                        Submit Check In
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Location info -->
+            <div class="location-info" id="location-info">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Fetching location...</span>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>

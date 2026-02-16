@@ -3,6 +3,9 @@
 // State management
 let isCheckedIn = false;
 let checkInTime = null;
+let stream = null;
+let capturedImageData = null;
+let currentLocation = null;
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,51 +26,222 @@ function updateDateTime() {
     // Format date (Month Day, Year)
     const options = { month: 'short', day: 'numeric', year: 'numeric' };
     document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', options);
+    
+    // Update camera timestamp if modal is open
+    const timestampEl = document.getElementById('camera-timestamp');
+    if (timestampEl && document.getElementById('selfie-modal').classList.contains('show')) {
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        timestampEl.textContent = `${hours}:${minutes}:${seconds}`;
+    }
 }
 
 // Handle action card clicks
 function handleAction(action) {
     switch(action) {
         case 'check-in':
-            performCheckIn();
+            if (isCheckedIn) {
+                showToast('You are already checked in!');
+                return;
+            }
+            openSelfieModal();
             break;
         case 'check-out':
             performCheckOut();
             break;
         case 'history':
-            showToast('Opening attendance history...');
+            window.location.href = 'history.html';
             break;
         case 'stats':
-            showToast('Loading statistics...');
+            window.location.href = 'statistics.html';
             break;
     }
 }
 
-// Check In functionality
-function performCheckIn() {
-    if (isCheckedIn) {
-        showToast('You are already checked in!');
+// Open Selfie Modal
+function openSelfieModal() {
+    const modal = document.getElementById('selfie-modal');
+    modal.classList.add('show');
+    
+    // Reset state
+    capturedImageData = null;
+    document.getElementById('camera-video').style.display = 'block';
+    document.getElementById('captured-image').style.display = 'none';
+    document.getElementById('camera-controls').style.display = 'flex';
+    document.getElementById('preview-controls').style.display = 'none';
+    document.querySelector('.camera-frame').classList.remove('captured');
+    
+    // Start camera
+    startCamera();
+    
+    // Get location
+    getLocation();
+}
+
+// Close Selfie Modal
+function closeSelfieModal() {
+    const modal = document.getElementById('selfie-modal');
+    modal.classList.remove('show');
+    
+    // Stop camera
+    stopCamera();
+}
+
+// Start Camera
+async function startCamera() {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: 'user',
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            } 
+        });
+        
+        const video = document.getElementById('camera-video');
+        video.srcObject = stream;
+        
+        // Update timestamp every second
+        window.cameraInterval = setInterval(() => {
+            updateDateTime();
+        }, 1000);
+        
+    } catch (err) {
+        console.error('Camera error:', err);
+        showToast('Unable to access camera. Please allow camera permissions.');
+    }
+}
+
+// Stop Camera
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
+    if (window.cameraInterval) {
+        clearInterval(window.cameraInterval);
+    }
+}
+
+// Get Location
+function getLocation() {
+    const locationEl = document.getElementById('location-info');
+    locationEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Fetching location...</span>';
+    
+    if (!navigator.geolocation) {
+        locationEl.innerHTML = '<i class="fas fa-times"></i><span>Location not supported</span>';
+        locationEl.classList.add('error');
         return;
     }
     
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            currentLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
+            locationEl.innerHTML = '<i class="fas fa-check-circle"></i><span>Location captured</span>';
+            locationEl.classList.add('success');
+        },
+        (error) => {
+            locationEl.innerHTML = '<i class="fas fa-times"></i><span>Location denied</span>';
+            locationEl.classList.add('error');
+            currentLocation = null;
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+    );
+}
+
+// Capture Selfie
+function captureSelfie() {
+    const video = document.getElementById('camera-video');
+    const canvas = document.getElementById('camera-canvas');
+    const capturedImg = document.getElementById('captured-image');
+    
+    // Flash effect
+    const flash = document.createElement('div');
+    flash.className = 'flash-effect active';
+    document.querySelector('.camera-frame').appendChild(flash);
+    setTimeout(() => flash.remove(), 300);
+    
+    // Capture to canvas
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    
+    // Flip horizontally (mirror effect)
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0);
+    
+    // Get image data
+    capturedImageData = canvas.toDataURL('image/jpeg', 0.8);
+    
+    // Show captured image
+    capturedImg.src = capturedImageData;
+    video.style.display = 'none';
+    capturedImg.style.display = 'block';
+    
+    // Update UI
+    document.getElementById('camera-controls').style.display = 'none';
+    document.getElementById('preview-controls').style.display = 'flex';
+    document.querySelector('.camera-frame').classList.add('captured');
+    
+    // Stop camera to save battery
+    stopCamera();
+}
+
+// Retake Selfie
+function retakeSelfie() {
+    capturedImageData = null;
+    document.getElementById('camera-video').style.display = 'block';
+    document.getElementById('captured-image').style.display = 'none';
+    document.getElementById('camera-controls').style.display = 'flex';
+    document.getElementById('preview-controls').style.display = 'none';
+    document.querySelector('.camera-frame').classList.remove('captured');
+    
+    startCamera();
+}
+
+// Submit Check In
+function submitCheckIn() {
+    if (!capturedImageData) {
+        showToast('Please capture a selfie first!');
+        return;
+    }
+    
+    // Save check in data
     isCheckedIn = true;
     checkInTime = new Date();
+    
+    const checkInData = {
+        isCheckedIn: true,
+        checkInTime: checkInTime.toISOString(),
+        selfie: capturedImageData,
+        location: currentLocation,
+        timestamp: new Date().toISOString()
+    };
+    
+    localStorage.setItem('attendance_status', JSON.stringify(checkInData));
+    
+    // Save to history
+    const records = JSON.parse(localStorage.getItem('attendance_records') || '[]');
+    records.push({
+        date: new Date().toISOString().split('T')[0],
+        checkIn: checkInTime.toISOString(),
+        checkOut: null,
+        duration: 0,
+        selfie: capturedImageData,
+        location: currentLocation
+    });
+    localStorage.setItem('attendance_records', JSON.stringify(records));
     
     // Update UI
     const badge = document.getElementById('status-badge');
     badge.textContent = 'Checked In';
     badge.classList.add('active');
     
-    // Save to localStorage
-    localStorage.setItem('attendance_status', JSON.stringify({
-        isCheckedIn: true,
-        checkInTime: checkInTime.toISOString()
-    }));
-    
-    showToast('Successfully checked in!');
-    
-    // Add ripple effect to card
-    createRipple(event);
+    closeSelfieModal();
+    showToast('Successfully checked in with selfie!');
 }
 
 // Check Out functionality
@@ -88,23 +262,20 @@ function performCheckOut() {
     badge.textContent = 'Not Checked In';
     badge.classList.remove('active');
     
-    // Save record and clear status
-    saveAttendanceRecord(checkOutTime, duration);
+    // Update last record with check out
+    const records = JSON.parse(localStorage.getItem('attendance_records') || '[]');
+    if (records.length > 0) {
+        const lastRecord = records[records.length - 1];
+        if (!lastRecord.checkOut) {
+            lastRecord.checkOut = checkOutTime.toISOString();
+            lastRecord.duration = duration;
+        }
+        localStorage.setItem('attendance_records', JSON.stringify(records));
+    }
+    
     localStorage.removeItem('attendance_status');
     
     showToast(`Checked out! Duration: ${duration} mins`);
-}
-
-// Save attendance record to history
-function saveAttendanceRecord(checkOutTime, duration) {
-    const records = JSON.parse(localStorage.getItem('attendance_records') || '[]');
-    records.push({
-        date: new Date().toISOString(),
-        checkIn: checkInTime.toISOString(),
-        checkOut: checkOutTime.toISOString(),
-        duration: duration
-    });
-    localStorage.setItem('attendance_records', JSON.stringify(records));
 }
 
 // Load status from localStorage
@@ -136,78 +307,9 @@ function showToast(message) {
     }, 3000);
 }
 
-// Create ripple effect on click
-function createRipple(event) {
-    const card = event.currentTarget;
-    const ripple = document.createElement('span');
-    const rect = card.getBoundingClientRect();
-    const size = Math.max(rect.width, rect.height);
-    const x = event.clientX - rect.left - size / 2;
-    const y = event.clientY - rect.top - size / 2;
-    
-    ripple.style.cssText = `
-        position: absolute;
-        width: ${size}px;
-        height: ${size}px;
-        left: ${x}px;
-        top: ${y}px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 50%;
-        transform: scale(0);
-        animation: ripple 0.6s ease-out;
-        pointer-events: none;
-    `;
-    
-    card.appendChild(ripple);
-    
-    setTimeout(() => ripple.remove(), 600);
-}
-
-// Add ripple animation to styles dynamically
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes ripple {
-        to {
-            transform: scale(4);
-            opacity: 0;
-        }
+// Close modal on escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeSelfieModal();
     }
-`;
-document.head.appendChild(style);
-
-// Add click event listeners to cards for ripple effect
-document.querySelectorAll('.action-card').forEach(card => {
-    card.addEventListener('click', function(e) {
-        const rect = this.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        const ripple = document.createElement('span');
-        ripple.style.cssText = `
-            position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            pointer-events: none;
-            width: 20px;
-            height: 20px;
-            left: ${x - 10}px;
-            top: ${y - 10}px;
-            animation: rippleEffect 0.6s ease-out;
-        `;
-        
-        this.appendChild(ripple);
-        setTimeout(() => ripple.remove(), 600);
-    });
 });
-
-// Add ripple keyframes
-const rippleStyle = document.createElement('style');
-rippleStyle.textContent = `
-    @keyframes rippleEffect {
-        to {
-            transform: scale(20);
-            opacity: 0;
-        }
-    }
-`;
-document.head.appendChild(rippleStyle);
