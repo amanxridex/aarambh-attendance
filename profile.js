@@ -61,31 +61,69 @@ function saveProfile(event) {
     showToast('Profile updated successfully!');
 }
 
-// Change image
+// Change image - Open file picker
 function changeImage() {
-    // In real app, this would open file picker
-    const images = [
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face',
-        'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face'
-    ];
+    // Create hidden file input
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*';
+    fileInput.capture = 'environment'; // Allows camera on mobile too
     
-    const current = document.getElementById('profile-img').src;
-    const currentIndex = images.findIndex(img => current.includes(img.split('?')[0]));
-    const nextIndex = (currentIndex + 1) % images.length;
+    fileInput.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            showToast('Please select an image file');
+            return;
+        }
+        
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('Image size should be less than 5MB');
+            return;
+        }
+        
+        // Read and display image
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const imageData = event.target.result;
+            
+            // Update profile image
+            document.getElementById('profile-img').src = imageData;
+            
+            // Save to localStorage
+            const saved = localStorage.getItem('profile_data');
+            let data;
+            if (saved) {
+                data = JSON.parse(saved);
+            } else {
+                // Create default data if none exists
+                data = {
+                    name: document.getElementById('profile-name').textContent,
+                    designation: document.getElementById('profile-designation').textContent,
+                    mobile: document.getElementById('profile-mobile').textContent,
+                    email: document.getElementById('profile-email').textContent,
+                    empId: document.getElementById('profile-id').textContent,
+                    department: document.getElementById('profile-dept').textContent
+                };
+            }
+            data.image = imageData;
+            localStorage.setItem('profile_data', JSON.stringify(data));
+            
+            showToast('Profile picture updated!');
+        };
+        
+        reader.onerror = function() {
+            showToast('Error reading image file');
+        };
+        
+        reader.readAsDataURL(file);
+    };
     
-    document.getElementById('profile-img').src = images[nextIndex];
-    
-    // Save to localStorage
-    const saved = localStorage.getItem('profile_data');
-    if (saved) {
-        const data = JSON.parse(saved);
-        data.image = images[nextIndex];
-        localStorage.setItem('profile_data', JSON.stringify(data));
-    }
-    
-    showToast('Profile picture updated!');
+    // Trigger file picker
+    fileInput.click();
 }
 
 // Logout
