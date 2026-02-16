@@ -1,13 +1,52 @@
-// Supabase Configuration - REPLACE THESE WITH YOUR ACTUAL VALUES
-const SUPABASE_URL = 'https://zbfgytxlnnddkurhiziy.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZmd5dHhsbm5kZGt1cmhpeml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMjkxODksImV4cCI6MjA4NjgwNTE4OX0.RKsFVWA1gktyXa1BqRqYv_i6_74OnEHdJatg03WeDMM';
+// Wait for Supabase to load
+let supabase = null;
 
-// Initialize Supabase client - use window.supabase
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if Supabase loaded
+    if (typeof window.supabase === 'undefined') {
+        console.error('Supabase not loaded! Retrying...');
+        setTimeout(initSupabase, 500);
+        return;
+    }
+    
+    initSupabase();
+});
+
+function initSupabase() {
+    if (typeof window.supabase === 'undefined') {
+        showError('Failed to load Supabase. Please refresh.');
+        return;
+    }
+
+    // Supabase Configuration
+    const SUPABASE_URL = 'https://zbfgytxlnnddkurhiziy.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZmd5dHhsbm5kZGt1cmhpeml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMjkxODksImV4cCI6MjA4NjgwNTE4OX0.RKsFVWA1gktyXa1BqRqYv_i6_74OnEHdJatg03WeDMM';
+
+    // Initialize Supabase client
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    console.log('Supabase initialized:', supabase);
+    
+    // Now initialize the app
+    initApp();
+}
 
 // Auth state
 let isLoading = false;
 let isManagementMode = false;
+
+function initApp() {
+    checkExistingSession();
+    document.getElementById('emp-label').classList.add('active');
+    
+    // Add enter key support
+    document.getElementById('password').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            handleLogin(e);
+        }
+    });
+}
 
 // Toggle between Employee and Management login
 function toggleLoginMode() {
@@ -59,6 +98,11 @@ function togglePassword() {
 async function handleLogin(event) {
     event.preventDefault();
     
+    if (!supabase) {
+        showError('System not ready. Please refresh.');
+        return;
+    }
+    
     if (isLoading) return;
     
     const email = document.getElementById('email').value.trim();
@@ -91,6 +135,7 @@ async function handleLogin(event) {
         if (authError) throw authError;
         
         const user = authData.user;
+        console.log('User logged in:', user);
         
         // Check if user is admin (management)
         const { data: adminData, error: adminError } = await supabase
@@ -98,6 +143,8 @@ async function handleLogin(event) {
             .select('*')
             .eq('id', user.id)
             .single();
+        
+        console.log('Admin check:', { adminData, adminError });
         
         const isAdmin = !adminError && adminData;
         
@@ -163,6 +210,11 @@ function showError(message) {
 
 // Show forgot password
 async function showForgotPassword() {
+    if (!supabase) {
+        showError('System not ready. Please refresh.');
+        return;
+    }
+    
     const email = document.getElementById('email').value;
     
     if (!email) {
@@ -181,6 +233,8 @@ async function showForgotPassword() {
 
 // Check existing session
 async function checkExistingSession() {
+    if (!supabase) return;
+    
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session) {
@@ -198,21 +252,10 @@ async function checkExistingSession() {
 
 // Logout function (can be called from other pages)
 async function logout() {
+    if (!supabase) return;
+    
     await supabase.auth.signOut();
     localStorage.removeItem('aarambh_session');
     sessionStorage.removeItem('aarambh_session');
     window.location.href = 'auth.html';
 }
-
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    checkExistingSession();
-    document.getElementById('emp-label').classList.add('active');
-    
-    // Add enter key support
-    document.getElementById('password').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            handleLogin(e);
-        }
-    });
-});
