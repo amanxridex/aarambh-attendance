@@ -720,3 +720,33 @@ body {
         height: 160px;
     }
 }
+
+/* PWA Standalone Mode */
+@media all and (display-mode: standalone) {
+  body {
+    overscroll-behavior-y: none;
+  }
+}
+
+/* Prevent text selection */
+* {
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea {
+  -webkit-user-select: text;
+}
+
+/* Hide scrollbar */
+::-webkit-scrollbar {
+  width: 0px;
+  background: transparent;
+}
+
+/* iOS fixes */
+@supports (-webkit-touch-callout: none) {
+  .app-container {
+    -webkit-touch-callout: none;
+  }
+}
