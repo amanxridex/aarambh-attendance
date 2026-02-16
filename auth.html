@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Attendance App</title>
+    <title>Login - Aarambh Attendance</title>
+    <link rel="icon" href="assets/aarambh.ico">
     <link rel="stylesheet" href="auth.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -47,17 +48,17 @@
             </div>
 
             <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
-                <!-- Username Input -->
+                <!-- Email Input (changed from username for Supabase) -->
                 <div class="input-group">
-                    <label for="username">Username</label>
+                    <label for="email">Email</label>
                     <div class="input-wrapper">
-                        <i class="fas fa-user input-icon"></i>
+                        <i class="fas fa-envelope input-icon"></i>
                         <input 
-                            type="text" 
-                            id="username" 
-                            name="username" 
-                            placeholder="Enter your username"
-                            autocomplete="username"
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            placeholder="Enter your email"
+                            autocomplete="email"
                             required
                         >
                     </div>
@@ -106,12 +107,12 @@
             <div class="demo-credentials" id="demo-creds">
                 <div class="demo-header">
                     <i class="fas fa-info-circle"></i>
-                    <span>Demo Credentials</span>
+                    <span>Demo Mode</span>
                 </div>
                 <div class="demo-list">
                     <div class="demo-item">
-                        <span class="demo-user">user / user123</span>
-                        <span class="demo-type">Employee</span>
+                        <span class="demo-user">Use any email/password</span>
+                        <span class="demo-type">Supabase Auth</span>
                     </div>
                 </div>
             </div>
@@ -134,6 +135,8 @@
         </div>
     </div>
 
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>
 </body>
 </html>
