@@ -307,22 +307,19 @@ function renderMiniCalendar(year, month, attendanceMap) {
         html += '<div class="cal-day empty"></div>';
     }
     
-    // Days
+    // Days - ALL days same rule: green if has check_in, red if not (no weekend exception)
     for (let day = 1; day <= daysInMonth; day++) {
         const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const record = attendanceMap[dateKey];
         const isToday = isCurrentMonth && day === today.getDate();
         const dateObj = new Date(year, month, day);
-        const isWeekend = dateObj.getDay() === 0 || dateObj.getDay() === 6;
         const isPastOrToday = dateObj <= today;
         
         let status = '';
         let dot = '';
         
-        if (isWeekend) {
-            // Weekend - no status
-            status = '';
-        } else if (record && record.check_in) {
+        // SAME RULE FOR ALL DAYS - NO WEEKEND EXCEPTION
+        if (record && record.check_in) {
             // Has check_in = PRESENT (green)
             const duration = record.duration_minutes || 0;
             if (duration >= 240) {
@@ -367,7 +364,6 @@ async function showDayDetail(dateKey) {
     
     const date = new Date(dateKey);
     const dateStr = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
     
     // Create day modal if not exists
     let dayModal = document.getElementById('day-detail-modal');
@@ -393,20 +389,9 @@ async function showDayDetail(dateKey) {
     
     let bodyHtml = '';
     
-    if (isWeekend) {
-        bodyHtml = `
-            <div class="selfie-container">
-                <div class="selfie-placeholder">
-                    <i class="fas fa-coffee"></i>
-                    <p>Weekend</p>
-                </div>
-            </div>
-            <div class="status-badge-large" style="background: var(--bg-secondary); color: var(--text-secondary); border-color: var(--border-color);">
-                <i class="fas fa-umbrella-beach"></i> Weekend / Holiday
-            </div>
-        `;
-    } else if (!record || !record.check_in) {
-        // ABSENT
+    // ALL DAYS SAME RULE - NO WEEKEND EXCEPTION
+    if (!record || !record.check_in) {
+        // ABSENT (red) - regardless of weekend
         bodyHtml = `
             <div class="selfie-container">
                 <div class="selfie-placeholder">
