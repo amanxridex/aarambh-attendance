@@ -561,3 +561,39 @@ body {
         font-size: 28px;
     }
 }
+
+.stat-card.half-day {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.05));
+    border-color: rgba(245, 158, 11, 0.3);
+}
+
+.stat-card.half-day .stat-icon {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
+.half-segment {
+    stroke: #f59e0b;
+}
+
+.legend .half {
+    color: #f59e0b;
+}
+
+.donut-segment {
+    fill: none;
+    stroke-width: 20;
+    transition: all 0.3s ease;
+}
+
+.present-segment {
+    stroke: #00d084;
+}
+
+.half-segment {
+    stroke: #f59e0b;
+}
+
+.absent-segment {
+    stroke: #ef4444;
+}
