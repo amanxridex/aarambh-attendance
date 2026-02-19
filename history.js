@@ -36,8 +36,14 @@ async function loadMonthData() {
     try {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
+        
+        // CORRECT: Get last day of month properly
+        const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+        
         const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-        const endDate = `${year}-${String(month + 1).padStart(2, '0')}-31`;
+        const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
+        
+        console.log('Fetching:', startDate, 'to', endDate); // Debug
         
         const { data, error } = await supabase
             .from('attendance')
@@ -49,7 +55,6 @@ async function loadMonthData() {
         
         if (error) throw error;
         
-        // Convert to object keyed by date
         attendanceData = {};
         data?.forEach(record => {
             attendanceData[record.date] = record;
