@@ -1,25 +1,13 @@
-// Supabase Configuration
-const SUPABASE_URL = 'https://zbfgytxlnnddkurhiziy.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZmd5dHhsbm5kZGt1cmhpeml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMjkxODksImV4cCI6MjA4NjgwNTE4OX0.RKsFVWA1gktyXa1BqRqYv_i6_74OnEHdJatg03WeDMM';
+const supabase = window.supabaseClient;
 
-let supabase = null;
 let employees = [];
 let todayAttendance = {};
 
-window.onload = function() {
-    initSupabase();
-};
-
-function initSupabase() {
-    if (typeof window.supabase === 'undefined') {
-        setTimeout(initSupabase, 500);
-        return;
-    }
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     loadEmployees();
     loadTodayAttendance();
-}
+});
 
 async function checkAuth() {
     const session = localStorage.getItem('aarambh_session') || sessionStorage.getItem('aarambh_session');
@@ -27,8 +15,8 @@ async function checkAuth() {
         window.location.href = 'auth.html';
         return;
     }
-    const sessionData = JSON.parse(session);
-    if (sessionData.role !== 'management') {
+    const data = JSON.parse(session);
+    if (data.role !== 'management') {
         window.location.href = 'index.html';
     }
 }
@@ -39,9 +27,10 @@ async function loadEmployees() {
             .from('employees')
             .select('*')
             .order('created_at', { ascending: false });
+        
         if (error) throw error;
         employees = data || [];
-        updateStats();
+        document.getElementById('total-employees').textContent = employees.length;
     } catch (error) {
         showToast('Failed to load employees', 'error');
     }
@@ -54,21 +43,18 @@ async function loadTodayAttendance() {
             .from('attendance')
             .select('*')
             .eq('date', today);
+        
         if (error) throw error;
         todayAttendance = {};
         data?.forEach(record => { todayAttendance[record.employee_id] = record; });
-        updateStats();
+        
+        const present = Object.values(todayAttendance).filter(a => a.status === 'present').length;
+        const absent = Object.values(todayAttendance).filter(a => a.status === 'absent').length;
+        document.getElementById('present-today').textContent = present;
+        document.getElementById('absent-today').textContent = absent;
     } catch (error) {
-        console.error('Error loading attendance:', error);
+        console.error('Error:', error);
     }
-}
-
-function updateStats() {
-    document.getElementById('total-employees').textContent = employees.length;
-    const present = Object.values(todayAttendance).filter(a => a.status === 'present').length;
-    const absent = Object.values(todayAttendance).filter(a => a.status === 'absent').length;
-    document.getElementById('present-today').textContent = present;
-    document.getElementById('absent-today').textContent = absent;
 }
 
 function openCreateEmployee() {
@@ -111,7 +97,6 @@ function renderEmployeesTable() {
     `).join('');
 }
 
-// SIMPLE SAVE - NO SUPABASE AUTH
 async function saveEmployee(event) {
     event.preventDefault();
     const btn = document.getElementById('create-emp-btn');
@@ -134,7 +119,6 @@ async function saveEmployee(event) {
             throw new Error('Password must be at least 6 characters');
         }
         
-        // Check duplicate username
         const { data: existing } = await supabase
             .from('employees')
             .select('username')
@@ -142,7 +126,6 @@ async function saveEmployee(event) {
             .maybeSingle();
         if (existing) throw new Error('Username already exists');
         
-        // Check duplicate emp_id
         const { data: existingId } = await supabase
             .from('employees')
             .select('emp_id')
@@ -150,7 +133,6 @@ async function saveEmployee(event) {
             .maybeSingle();
         if (existingId) throw new Error('Employee ID already exists');
         
-        // SIMPLE INSERT - NO AUTH
         const { data, error } = await supabase
             .from('employees')
             .insert([employeeData])
@@ -160,7 +142,7 @@ async function saveEmployee(event) {
         if (error) throw error;
         
         employees.unshift(data);
-        updateStats();
+        document.getElementById('total-employees').textContent = employees.length;
         closeCreateModal();
         showToast(`Created! Username: ${data.username}, Password: ${employeeData.password}`, 'success');
         
@@ -177,7 +159,7 @@ async function deleteEmployee(id) {
         const { error } = await supabase.from('employees').delete().eq('id', id);
         if (error) throw error;
         employees = employees.filter(e => e.id !== id);
-        updateStats();
+        document.getElementById('total-employees').textContent = employees.length;
         renderEmployeesTable();
         showToast('Employee deleted', 'success');
     } catch (error) {
