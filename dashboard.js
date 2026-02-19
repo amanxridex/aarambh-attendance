@@ -2,14 +2,10 @@
 const SUPABASE_URL = 'https://zbfgytxlnnddkurhiziy.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZmd5dHhsbm5kZGt1cmhpeml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMjkxODksImV4cCI6MjA4NjgwNTE4OX0.RKsFVWA1gktyXa1BqRqYv_i6_74OnEHdJatg03WeDMM';
 
-// Initialize Supabase
 let supabase = null;
-
-// State
 let employees = [];
 let todayAttendance = {};
 
-// Initialize when page loads
 window.onload = function() {
     initSupabase();
 };
@@ -19,90 +15,62 @@ function initSupabase() {
         setTimeout(initSupabase, 500);
         return;
     }
-    
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('Supabase initialized');
-    
-    // Check auth and load data
     checkAuth();
     loadEmployees();
     loadTodayAttendance();
 }
 
-// Check if user is authenticated and is admin
 async function checkAuth() {
     const session = localStorage.getItem('aarambh_session') || sessionStorage.getItem('aarambh_session');
-    
     if (!session) {
         window.location.href = 'auth.html';
         return;
     }
-    
     const sessionData = JSON.parse(session);
-    
     if (sessionData.role !== 'management') {
-        showToast('Access denied. Admins only.', 'error');
-        setTimeout(() => {
-            window.location.href = 'index.html';
-        }, 2000);
+        window.location.href = 'index.html';
     }
 }
 
-// Load employees from Supabase
 async function loadEmployees() {
     try {
         const { data, error } = await supabase
             .from('employees')
             .select('*')
             .order('created_at', { ascending: false });
-        
         if (error) throw error;
-        
         employees = data || [];
         updateStats();
-        
     } catch (error) {
-        console.error('Error loading employees:', error);
         showToast('Failed to load employees', 'error');
     }
 }
 
-// Load today's attendance
 async function loadTodayAttendance() {
     const today = new Date().toISOString().split('T')[0];
-    
     try {
         const { data, error } = await supabase
             .from('attendance')
             .select('*')
             .eq('date', today);
-        
         if (error) throw error;
-        
         todayAttendance = {};
-        data?.forEach(record => {
-            todayAttendance[record.employee_id] = record;
-        });
-        
+        data?.forEach(record => { todayAttendance[record.employee_id] = record; });
         updateStats();
-        
     } catch (error) {
         console.error('Error loading attendance:', error);
     }
 }
 
-// Update stats bar
 function updateStats() {
-    const total = employees.length;
+    document.getElementById('total-employees').textContent = employees.length;
     const present = Object.values(todayAttendance).filter(a => a.status === 'present').length;
     const absent = Object.values(todayAttendance).filter(a => a.status === 'absent').length;
-    
-    document.getElementById('total-employees').textContent = total;
     document.getElementById('present-today').textContent = present;
     document.getElementById('absent-today').textContent = absent;
 }
 
-// Modal functions
 function openCreateEmployee() {
     document.getElementById('create-modal').classList.add('show');
 }
@@ -127,7 +95,6 @@ function renderEmployeesTable() {
         tbody.innerHTML = '<tr><td colspan="6" class="text-center">No employees found</td></tr>';
         return;
     }
-    
     tbody.innerHTML = employees.map(emp => `
         <tr>
             <td>${emp.name}</td>
@@ -144,13 +111,11 @@ function renderEmployeesTable() {
     `).join('');
 }
 
-// Save employee - SIMPLE INSERT, NO AUTH USER CREATION
+// SIMPLE SAVE - NO SUPABASE AUTH
 async function saveEmployee(event) {
     event.preventDefault();
-    
     const btn = document.getElementById('create-emp-btn');
     btn.disabled = true;
-    btn.classList.add('loading');
     
     try {
         const employeeData = {
@@ -165,34 +130,27 @@ async function saveEmployee(event) {
             created_at: new Date().toISOString()
         };
         
-        // Validation
         if (employeeData.password.length < 6) {
             throw new Error('Password must be at least 6 characters');
         }
         
-        // Check if username exists
+        // Check duplicate username
         const { data: existing } = await supabase
             .from('employees')
             .select('username')
             .eq('username', employeeData.username)
             .maybeSingle();
+        if (existing) throw new Error('Username already exists');
         
-        if (existing) {
-            throw new Error('Username already exists');
-        }
-        
-        // Check if emp_id exists
+        // Check duplicate emp_id
         const { data: existingId } = await supabase
             .from('employees')
             .select('emp_id')
             .eq('emp_id', employeeData.emp_id)
             .maybeSingle();
+        if (existingId) throw new Error('Employee ID already exists');
         
-        if (existingId) {
-            throw new Error('Employee ID already exists');
-        }
-        
-        // Simple insert - no Supabase Auth
+        // SIMPLE INSERT - NO AUTH
         const { data, error } = await supabase
             .from('employees')
             .insert([employeeData])
@@ -203,41 +161,30 @@ async function saveEmployee(event) {
         
         employees.unshift(data);
         updateStats();
-        
         closeCreateModal();
-        showToast(`Employee created! Username: ${data.username}, Password: ${employeeData.password}`, 'success');
+        showToast(`Created! Username: ${data.username}, Password: ${employeeData.password}`, 'success');
         
     } catch (error) {
-        console.error('Error:', error);
         showToast(error.message || 'Failed to create employee', 'error');
     } finally {
         btn.disabled = false;
-        btn.classList.remove('loading');
     }
 }
 
 async function deleteEmployee(id) {
     if (!confirm('Delete this employee?')) return;
-    
     try {
-        const { error } = await supabase
-            .from('employees')
-            .delete()
-            .eq('id', id);
-        
+        const { error } = await supabase.from('employees').delete().eq('id', id);
         if (error) throw error;
-        
         employees = employees.filter(e => e.id !== id);
         updateStats();
         renderEmployeesTable();
         showToast('Employee deleted', 'success');
-        
     } catch (error) {
         showToast('Failed to delete', 'error');
     }
 }
 
-// Toast
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     toast.textContent = message;
@@ -246,14 +193,12 @@ function showToast(message, type = 'success') {
     setTimeout(() => toast.classList.remove('show'), 5000);
 }
 
-// Logout
 function logout() {
     localStorage.removeItem('aarambh_session');
     sessionStorage.removeItem('aarambh_session');
     window.location.href = 'auth.html';
 }
 
-// Close modals on escape
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         closeCreateModal();
