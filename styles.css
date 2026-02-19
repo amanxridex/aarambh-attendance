@@ -750,3 +750,8 @@ input, textarea {
     -webkit-touch-callout: none;
   }
 }
+
+.status-badge.completed {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+}

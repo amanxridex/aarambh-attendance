@@ -2,8 +2,9 @@ const supabase = window.supabaseClient;
 
 // State management
 let currentUser = null;
-let isCheckedIn = false;
 let todayRecord = null;
+let canCheckIn = false;
+let canCheckOut = false;
 let stream = null;
 let capturedImageData = null;
 let currentLocation = null;
@@ -36,7 +37,7 @@ async function checkAuth() {
     await loadTodayStatus();
 }
 
-// Load today's attendance from Supabase
+// Load today's attendance from Supabase - MAIN LOGIC
 async function loadTodayStatus() {
     try {
         const today = new Date().toISOString().split('T')[0];
@@ -50,29 +51,43 @@ async function loadTodayStatus() {
         
         if (error) throw error;
         
-        if (data) {
-            todayRecord = data;
-            if (data.check_in && !data.check_out) {
-                isCheckedIn = true;
-                updateStatusUI('Checked In');
-            } else if (data.check_out) {
-                isCheckedIn = false;
-                updateStatusUI('Checked Out');
-            } else {
-                updateStatusUI('Not Checked In');
-            }
-        } else {
-            updateStatusUI('Not Checked In');
+        todayRecord = data;
+        
+        // LOGIC: Determine what user can do today
+        if (!data) {
+            // No record today - can check in
+            canCheckIn = true;
+            canCheckOut = false;
+            updateStatusUI('Not Checked In', 'ready');
+        } else if (data.check_in && !data.check_out) {
+            // Checked in but not out - can check out
+            canCheckIn = false;
+            canCheckOut = true;
+            updateStatusUI('Checked In', 'active');
+        } else if (data.check_in && data.check_out) {
+            // Both done - NOTHING allowed today
+            canCheckIn = false;
+            canCheckOut = false;
+            updateStatusUI('Completed', 'completed');
         }
+        
     } catch (error) {
         console.error('Error loading status:', error);
+        showToast('Failed to load attendance status');
     }
 }
 
-function updateStatusUI(status) {
+function updateStatusUI(status, type) {
     const badge = document.getElementById('status-badge');
     badge.textContent = status;
-    badge.classList.toggle('active', status === 'Checked In');
+    
+    // Remove all classes
+    badge.classList.remove('active', 'completed', 'ready');
+    
+    // Add appropriate class
+    if (type === 'active') badge.classList.add('active');
+    else if (type === 'completed') badge.classList.add('completed');
+    else if (type === 'ready') badge.classList.add('ready');
 }
 
 // Update date and time
@@ -92,17 +107,34 @@ function updateDateTime() {
     }
 }
 
-// Handle action card clicks
+// Handle action card clicks - WITH PROPER VALIDATION
 function handleAction(action) {
     switch(action) {
         case 'check-in':
-            if (isCheckedIn) {
-                showToast('You are already checked in!');
+            if (!canCheckIn) {
+                if (todayRecord && todayRecord.check_out) {
+                    showToast('You have completed attendance for today. Come back tomorrow!');
+                } else if (todayRecord && todayRecord.check_in) {
+                    showToast('You are already checked in! Please check out first.');
+                } else {
+                    showToast('Cannot check in at this time');
+                }
                 return;
             }
             openSelfieModal();
             break;
+            
         case 'check-out':
+            if (!canCheckOut) {
+                if (todayRecord && todayRecord.check_out) {
+                    showToast('You have already checked out for today!');
+                } else if (!todayRecord) {
+                    showToast('You need to check in first!');
+                } else {
+                    showToast('Cannot check out at this time');
+                }
+                return;
+            }
             performCheckOut();
             break;
     }
@@ -259,6 +291,12 @@ async function submitCheckIn() {
         return;
     }
     
+    // Double check - prevent duplicate check-in
+    if (!canCheckIn) {
+        showToast('Check-in not allowed at this time');
+        return;
+    }
+    
     const btn = document.getElementById('submit-btn');
     const btnText = btn.querySelector('.btn-text');
     const btnLoader = btn.querySelector('.btn-loader');
@@ -272,8 +310,7 @@ async function submitCheckIn() {
         const today = now.toISOString().split('T')[0];
         
         // Upload selfie to storage
-        const fileExt = 'jpg';
-        const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
+        const fileName = `${currentUser.id}_${Date.now()}.jpg`;
         const filePath = `attendance_selfies/${today}/${fileName}`;
         
         const blob = dataURLtoBlob(capturedImageData);
@@ -311,12 +348,14 @@ async function submitCheckIn() {
         
         if (error) throw error;
         
+        // Update state
         todayRecord = data;
-        isCheckedIn = true;
+        canCheckIn = false;
+        canCheckOut = true;
         
-        updateStatusUI('Checked In');
+        updateStatusUI('Checked In', 'active');
         closeSelfieModal();
-        showToast('Successfully checked in!');
+        showToast('Successfully checked in! Don\'t forget to check out.');
         
     } catch (error) {
         console.error('Check-in error:', error);
@@ -330,8 +369,8 @@ async function submitCheckIn() {
 
 // Perform Check Out
 async function performCheckOut() {
-    if (!isCheckedIn || !todayRecord) {
-        showToast('You need to check in first!');
+    if (!canCheckOut || !todayRecord) {
+        showToast('Check-out not allowed at this time');
         return;
     }
     
@@ -350,11 +389,13 @@ async function performCheckOut() {
         
         if (error) throw error;
         
-        isCheckedIn = false;
-        todayRecord = null;
+        // Update state - NOTHING allowed after check-out
+        todayRecord.check_out = now.toISOString();
+        canCheckIn = false;
+        canCheckOut = false;
         
-        updateStatusUI('Checked Out');
-        showToast(`Checked out! Duration: ${durationMinutes} mins`);
+        updateStatusUI('Completed', 'completed');
+        showToast(`Checked out! Duration: ${durationMinutes} mins. See you tomorrow!`);
         
     } catch (error) {
         console.error('Check-out error:', error);
