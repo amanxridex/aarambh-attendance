@@ -2,64 +2,30 @@
 const SUPABASE_URL = 'https://zbfgytxlnnddkurhiziy.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZmd5dHhsbm5kZGt1cmhpeml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMjkxODksImV4cCI6MjA4NjgwNTE4OX0.RKsFVWA1gktyXa1BqRqYv_i6_74OnEHdJatg03WeDMM';
 
-// Global supabase instance
 let supabase = null;
-
-// Auth state
 let isLoading = false;
 let isManagementMode = false;
 
-// Initialize when page loads
+// Initialize
 window.onload = function() {
-    console.log('Window loaded, checking Supabase...');
-    
-    // Retry checking for Supabase
-    let attempts = 0;
-    const maxAttempts = 10;
-    
-    const checkSupabase = setInterval(() => {
-        attempts++;
-        console.log(`Attempt ${attempts}: Checking window.supabase...`);
-        
-        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-            clearInterval(checkSupabase);
-            console.log('Supabase found! Initializing...');
-            initSupabase();
-        } else if (attempts >= maxAttempts) {
-            clearInterval(checkSupabase);
-            console.error('Supabase failed to load after', maxAttempts, 'attempts');
-            showError('Failed to load Supabase. Please check your internet connection and refresh.');
-        }
-    }, 500); // Check every 500ms
+    if (typeof window.supabase === 'undefined') {
+        setTimeout(window.onload, 500);
+        return;
+    }
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    initApp();
 };
 
-function initSupabase() {
-    try {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('Supabase initialized successfully:', supabase);
-        
-        // Now initialize the app
-        initApp();
-    } catch (error) {
-        console.error('Error initializing Supabase:', error);
-        showError('Error initializing app. Please refresh.');
-    }
-}
-
 function initApp() {
-    console.log('Initializing app...');
-    checkExistingSession();
     document.getElementById('emp-label').classList.add('active');
+    checkExistingSession();
     
-    // Add enter key support
+    // Enter key on password field submits form
     document.getElementById('password').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            handleLogin(e);
-        }
+        if (e.key === 'Enter') handleLogin(e);
     });
 }
 
-// Toggle between Employee and Management login
 function toggleLoginMode() {
     const toggle = document.getElementById('login-mode');
     const modeText = document.getElementById('mode-text');
@@ -75,141 +41,120 @@ function toggleLoginMode() {
         body.classList.add('mode-management');
         empLabel.classList.remove('active');
         mgmtLabel.classList.add('active');
-        document.getElementById('email').placeholder = 'admin@company.com';
+        document.getElementById('username').placeholder = 'admin username';
     } else {
         modeText.innerHTML = '<i class="fas fa-user"></i><span>Employee Login</span>';
         modeText.classList.remove('management');
         body.classList.remove('mode-management');
         empLabel.classList.add('active');
         mgmtLabel.classList.remove('active');
-        document.getElementById('email').placeholder = 'employee@company.com';
+        document.getElementById('username').placeholder = 'employee username';
     }
     
-    document.getElementById('email').value = '';
+    // Clear inputs when switching modes
+    document.getElementById('username').value = '';
     document.getElementById('password').value = '';
 }
 
-// Toggle password visibility
 function togglePassword() {
-    const passwordInput = document.getElementById('password');
-    const eyeIcon = document.getElementById('eye-icon');
-    
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        eyeIcon.classList.remove('fa-eye');
-        eyeIcon.classList.add('fa-eye-slash');
+    const input = document.getElementById('password');
+    const icon = document.getElementById('eye-icon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
     } else {
-        passwordInput.type = 'password';
-        eyeIcon.classList.remove('fa-eye-slash');
-        eyeIcon.classList.add('fa-eye');
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
     }
 }
 
-// Handle login form submission
 async function handleLogin(event) {
     event.preventDefault();
     
-    if (!supabase) {
-        showError('System not ready. Please wait or refresh.');
-        return;
-    }
+    if (isLoading || !supabase) return;
     
-    if (isLoading) return;
-    
-    const email = document.getElementById('email').value.trim();
+    const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
     const remember = document.getElementById('remember').checked;
-    const submitBtn = document.getElementById('submit-btn');
+    const btn = document.getElementById('submit-btn');
+    const btnText = btn.querySelector('.btn-text');
+    const btnIcon = btn.querySelector('.btn-icon');
+    const btnLoader = btn.querySelector('.btn-loader');
     
-    // Validation
-    if (!email || !password) {
+    if (!username || !password) {
         showError('Please fill in all fields');
         return;
     }
     
-    if (password.length < 6) {
-        showError('Password must be at least 6 characters');
-        return;
-    }
-    
-    // Start loading
+    // Show loading
     isLoading = true;
-    submitBtn.classList.add('loading');
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    btnIcon.style.display = 'none';
+    btnLoader.style.display = 'block';
     
     try {
-        console.log('Attempting login...');
+        let user = null;
+        let role = '';
+        let table = isManagementMode ? 'admins' : 'employees';
         
-        // Sign in with Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password
-        });
+        console.log(`Checking ${table} for username: ${username}`);
         
-        if (authError) {
-            console.error('Auth error:', authError);
-            throw new Error(authError.message);
-        }
-        
-        const user = authData.user;
-        console.log('User logged in:', user);
-        
-        // Check if user is admin
-        console.log('Checking admin status for user ID:', user.id);
-        const { data: adminData, error: adminError } = await supabase
-            .from('admins')
+        // Simple username/password check - no email auth
+        const { data, error } = await supabase
+            .from(table)
             .select('*')
-            .eq('id', user.id)
+            .eq('username', username)
+            .eq('password', password)
             .single();
         
-        console.log('Admin query result:', { adminData, adminError });
-        
-        const isAdmin = adminData && !adminError;
-        
-        // Validate mode
-        if (isManagementMode && !isAdmin) {
-            console.log('User tried management login but is not admin');
-            await supabase.auth.signOut();
-            throw new Error('You do not have management access');
+        if (error || !data) {
+            throw new Error('Invalid username or password');
         }
+        
+        user = data;
+        role = isManagementMode ? 'management' : 'employee';
+        
+        console.log('Login successful:', user.name);
         
         // Store session
         const sessionData = {
             user: user,
-            role: isAdmin ? 'management' : 'employee',
-            profile: isAdmin ? adminData : null,
-            remember: remember
+            role: role,
+            username: username,
+            loginTime: new Date().toISOString()
         };
         
-        storeSession(sessionData, remember);
-        showToast(`Welcome back, ${adminData?.name || user.email}!`);
+        if (remember) {
+            localStorage.setItem('aarambh_session', JSON.stringify(sessionData));
+        } else {
+            sessionStorage.setItem('aarambh_session', JSON.stringify(sessionData));
+        }
         
-        // Redirect
+        showToast(`Welcome, ${user.name}!`);
+        
         setTimeout(() => {
-            window.location.href = isAdmin ? 'dashboard.html' : 'index.html';
+            window.location.href = role === 'management' ? 'dashboard.html' : 'index.html';
         }, 1500);
         
     } catch (error) {
         console.error('Login error:', error);
         isLoading = false;
-        submitBtn.classList.remove('loading');
-        showError(error.message || 'Login failed. Please try again.');
+        btn.disabled = false;
+        btnText.style.display = 'block';
+        btnIcon.style.display = 'block';
+        btnLoader.style.display = 'none';
         
-        const authCard = document.querySelector('.auth-card');
-        authCard.classList.add('shake');
-        setTimeout(() => authCard.classList.remove('shake'), 500);
+        showError(error.message || 'Login failed');
+        
+        // Shake animation
+        document.querySelector('.auth-card').classList.add('shake');
+        setTimeout(() => document.querySelector('.auth-card').classList.remove('shake'), 500);
     }
 }
 
-// Store session
-function storeSession(data, remember) {
-    if (remember) {
-        localStorage.setItem('aarambh_session', JSON.stringify(data));
-    } else {
-        sessionStorage.setItem('aarambh_session', JSON.stringify(data));
-    }
-}
-
-// Show toast
 function showToast(message) {
     const toast = document.getElementById('toast');
     document.getElementById('toast-message').textContent = message;
@@ -217,7 +162,6 @@ function showToast(message) {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// Show error
 function showError(message) {
     const toast = document.getElementById('error-toast');
     document.getElementById('error-message').textContent = message;
@@ -225,56 +169,17 @@ function showError(message) {
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-// Forgot password
-async function showForgotPassword() {
-    if (!supabase) {
-        showError('System not ready. Please wait.');
-        return;
-    }
-    
-    const email = document.getElementById('email').value;
-    if (!email) {
-        showError('Please enter your email first');
-        return;
-    }
-    
-    try {
-        const { error } = await supabase.auth.resetPasswordForEmail(email);
-        if (error) throw error;
-        showToast('Password reset link sent!');
-    } catch (error) {
-        showError('Failed to send reset link');
+function checkExistingSession() {
+    const session = localStorage.getItem('aarambh_session') || sessionStorage.getItem('aarambh_session');
+    if (session) {
+        const data = JSON.parse(session);
+        // Redirect based on role
+        window.location.href = data.role === 'management' ? 'dashboard.html' : 'index.html';
     }
 }
 
-// Check existing session
-async function checkExistingSession() {
-    if (!supabase) return;
-    
-    try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-            const saved = localStorage.getItem('aarambh_session') || sessionStorage.getItem('aarambh_session');
-            if (saved) {
-                const data = JSON.parse(saved);
-                if (data.role === 'management') {
-                    window.location.href = 'dashboard.html';
-                } else {
-                    window.location.href = 'index.html';
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Session check error:', error);
-    }
-}
-
-// Logout
+// Logout function (can be called from other pages)
 async function logout() {
-    if (!supabase) return;
-    
-    await supabase.auth.signOut();
     localStorage.removeItem('aarambh_session');
     sessionStorage.removeItem('aarambh_session');
     window.location.href = 'auth.html';

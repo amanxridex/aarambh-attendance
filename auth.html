@@ -48,17 +48,17 @@
             </div>
 
             <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
-                <!-- Email Input -->
+                <!-- Username Input -->
                 <div class="input-group">
-                    <label for="email">Email</label>
+                    <label for="username">Username</label>
                     <div class="input-wrapper">
-                        <i class="fas fa-envelope input-icon"></i>
+                        <i class="fas fa-user input-icon"></i>
                         <input 
-                            type="email" 
-                            id="email" 
-                            name="email" 
-                            placeholder="Enter your email"
-                            autocomplete="email"
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            placeholder="Enter your username"
+                            autocomplete="username"
                             required
                         >
                     </div>
@@ -90,14 +90,13 @@
                         <span class="checkmark"></span>
                         <span class="label-text">Remember me</span>
                     </label>
-                    <a href="#" class="forgot-link" onclick="showForgotPassword()">Forgot Password?</a>
                 </div>
 
                 <!-- Submit Button -->
                 <button type="submit" class="submit-btn" id="submit-btn">
                     <span class="btn-text">Sign In</span>
                     <i class="fas fa-arrow-right btn-icon"></i>
-                    <div class="btn-loader">
+                    <div class="btn-loader" style="display: none;">
                         <div class="spinner"></div>
                     </div>
                 </button>
@@ -107,12 +106,16 @@
             <div class="demo-credentials" id="demo-creds">
                 <div class="demo-header">
                     <i class="fas fa-info-circle"></i>
-                    <span>Demo Mode</span>
+                    <span>Demo Credentials</span>
                 </div>
                 <div class="demo-list">
                     <div class="demo-item">
-                        <span class="demo-user">Use any email/password</span>
-                        <span class="demo-type">Supabase Auth</span>
+                        <span class="demo-user">user / user123</span>
+                        <span class="demo-type">Employee</span>
+                    </div>
+                    <div class="demo-item">
+                        <span class="demo-user">admin / admin123</span>
+                        <span class="demo-type">Management</span>
                     </div>
                 </div>
             </div>
@@ -135,18 +138,8 @@
         </div>
     </div>
 
-    <!-- Supabase SDK - Using jsDelivr CDN (more reliable) -->
+    <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
-    
-    <!-- Fallback script loader -->
-    <script>
-        // Check if Supabase loaded, if not try alternative
-        if (typeof window.supabase === 'undefined') {
-            console.log('Primary CDN failed, loading fallback...');
-            document.write('<script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.js"><\/script>');
-        }
-    </script>
-    
     <script src="auth.js"></script>
 </body>
 </html>
