@@ -1,33 +1,90 @@
-// script.js
+const supabase = window.supabaseClient;
 
 // State management
+let currentUser = null;
 let isCheckedIn = false;
-let checkInTime = null;
+let todayRecord = null;
 let stream = null;
 let capturedImageData = null;
 let currentLocation = null;
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
     updateDateTime();
     setInterval(updateDateTime, 1000);
-    loadStatus();
 });
+
+// Check authentication
+async function checkAuth() {
+    const session = localStorage.getItem('aarambh_session') || sessionStorage.getItem('aarambh_session');
+    
+    if (!session) {
+        window.location.href = 'auth.html';
+        return;
+    }
+    
+    const sessionData = JSON.parse(session);
+    currentUser = sessionData.user;
+    
+    if (!currentUser) {
+        window.location.href = 'auth.html';
+        return;
+    }
+    
+    // Load today's attendance status
+    await loadTodayStatus();
+}
+
+// Load today's attendance from Supabase
+async function loadTodayStatus() {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        const { data, error } = await supabase
+            .from('attendance')
+            .select('*')
+            .eq('employee_id', currentUser.id)
+            .eq('date', today)
+            .maybeSingle();
+        
+        if (error) throw error;
+        
+        if (data) {
+            todayRecord = data;
+            if (data.check_in && !data.check_out) {
+                isCheckedIn = true;
+                updateStatusUI('Checked In');
+            } else if (data.check_out) {
+                isCheckedIn = false;
+                updateStatusUI('Checked Out');
+            } else {
+                updateStatusUI('Not Checked In');
+            }
+        } else {
+            updateStatusUI('Not Checked In');
+        }
+    } catch (error) {
+        console.error('Error loading status:', error);
+    }
+}
+
+function updateStatusUI(status) {
+    const badge = document.getElementById('status-badge');
+    badge.textContent = status;
+    badge.classList.toggle('active', status === 'Checked In');
+}
 
 // Update date and time
 function updateDateTime() {
     const now = new Date();
-    
-    // Format time (HH:MM)
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     document.getElementById('current-time').textContent = `${hours}:${minutes}`;
     
-    // Format date (Month Day, Year)
     const options = { month: 'short', day: 'numeric', year: 'numeric' };
     document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', options);
     
-    // Update camera timestamp if modal is open
     const timestampEl = document.getElementById('camera-timestamp');
     if (timestampEl && document.getElementById('selfie-modal').classList.contains('show')) {
         const seconds = String(now.getSeconds()).padStart(2, '0');
@@ -48,12 +105,6 @@ function handleAction(action) {
         case 'check-out':
             performCheckOut();
             break;
-        case 'history':
-            window.location.href = 'history.html';
-            break;
-        case 'stats':
-            window.location.href = 'statistics.html';
-            break;
     }
 }
 
@@ -62,7 +113,6 @@ function openSelfieModal() {
     const modal = document.getElementById('selfie-modal');
     modal.classList.add('show');
     
-    // Reset state
     capturedImageData = null;
     document.getElementById('camera-video').style.display = 'block';
     document.getElementById('captured-image').style.display = 'none';
@@ -70,10 +120,7 @@ function openSelfieModal() {
     document.getElementById('preview-controls').style.display = 'none';
     document.querySelector('.camera-frame').classList.remove('captured');
     
-    // Start camera
     startCamera();
-    
-    // Get location
     getLocation();
 }
 
@@ -81,8 +128,6 @@ function openSelfieModal() {
 function closeSelfieModal() {
     const modal = document.getElementById('selfie-modal');
     modal.classList.remove('show');
-    
-    // Stop camera
     stopCamera();
 }
 
@@ -100,14 +145,13 @@ async function startCamera() {
         const video = document.getElementById('camera-video');
         video.srcObject = stream;
         
-        // Update timestamp every second
         window.cameraInterval = setInterval(() => {
             updateDateTime();
         }, 1000);
         
     } catch (err) {
         console.error('Camera error:', err);
-        showToast('Unable to access camera. Please allow camera permissions.');
+        showToast('Unable to access camera. Please allow permissions.');
     }
 }
 
@@ -157,36 +201,29 @@ function captureSelfie() {
     const canvas = document.getElementById('camera-canvas');
     const capturedImg = document.getElementById('captured-image');
     
-    // Flash effect
     const flash = document.createElement('div');
     flash.className = 'flash-effect active';
     document.querySelector('.camera-frame').appendChild(flash);
     setTimeout(() => flash.remove(), 300);
     
-    // Capture to canvas
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
     
-    // Flip horizontally (mirror effect)
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(video, 0, 0);
     
-    // Get image data
     capturedImageData = canvas.toDataURL('image/jpeg', 0.8);
     
-    // Show captured image
     capturedImg.src = capturedImageData;
     video.style.display = 'none';
     capturedImg.style.display = 'block';
     
-    // Update UI
     document.getElementById('camera-controls').style.display = 'none';
     document.getElementById('preview-controls').style.display = 'flex';
     document.querySelector('.camera-frame').classList.add('captured');
     
-    // Stop camera to save battery
     stopCamera();
 }
 
@@ -202,95 +239,126 @@ function retakeSelfie() {
     startCamera();
 }
 
-// Submit Check In
-function submitCheckIn() {
+// Convert base64 to blob for upload
+function dataURLtoBlob(dataURL) {
+    const arr = dataURL.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+}
+
+// Submit Check In to Supabase
+async function submitCheckIn() {
     if (!capturedImageData) {
         showToast('Please capture a selfie first!');
         return;
     }
     
-    // Save check in data
-    isCheckedIn = true;
-    checkInTime = new Date();
+    const btn = document.getElementById('submit-btn');
+    const btnText = btn.querySelector('.btn-text');
+    const btnLoader = btn.querySelector('.btn-loader');
     
-    const checkInData = {
-        isCheckedIn: true,
-        checkInTime: checkInTime.toISOString(),
-        selfie: capturedImageData,
-        location: currentLocation,
-        timestamp: new Date().toISOString()
-    };
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    btnLoader.style.display = 'block';
     
-    localStorage.setItem('attendance_status', JSON.stringify(checkInData));
-    
-    // Save to history
-    const records = JSON.parse(localStorage.getItem('attendance_records') || '[]');
-    records.push({
-        date: new Date().toISOString().split('T')[0],
-        checkIn: checkInTime.toISOString(),
-        checkOut: null,
-        duration: 0,
-        selfie: capturedImageData,
-        location: currentLocation
-    });
-    localStorage.setItem('attendance_records', JSON.stringify(records));
-    
-    // Update UI
-    const badge = document.getElementById('status-badge');
-    badge.textContent = 'Checked In';
-    badge.classList.add('active');
-    
-    closeSelfieModal();
-    showToast('Successfully checked in with selfie!');
+    try {
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+        
+        // Upload selfie to storage
+        const fileExt = 'jpg';
+        const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
+        const filePath = `attendance_selfies/${today}/${fileName}`;
+        
+        const blob = dataURLtoBlob(capturedImageData);
+        
+        const { error: uploadError } = await supabase.storage
+            .from('employee-assets')
+            .upload(filePath, blob, {
+                contentType: 'image/jpeg',
+                cacheControl: '3600'
+            });
+        
+        if (uploadError) throw uploadError;
+        
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from('employee-assets')
+            .getPublicUrl(filePath);
+        
+        // Create attendance record
+        const attendanceData = {
+            employee_id: currentUser.id,
+            date: today,
+            check_in: now.toISOString(),
+            status: 'present',
+            selfie_url: publicUrl,
+            location_lat: currentLocation?.lat || null,
+            location_lng: currentLocation?.lng || null
+        };
+        
+        const { data, error } = await supabase
+            .from('attendance')
+            .insert([attendanceData])
+            .select()
+            .single();
+        
+        if (error) throw error;
+        
+        todayRecord = data;
+        isCheckedIn = true;
+        
+        updateStatusUI('Checked In');
+        closeSelfieModal();
+        showToast('Successfully checked in!');
+        
+    } catch (error) {
+        console.error('Check-in error:', error);
+        showToast('Failed to check in: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btnText.style.display = 'block';
+        btnLoader.style.display = 'none';
+    }
 }
 
-// Check Out functionality
-function performCheckOut() {
-    if (!isCheckedIn) {
+// Perform Check Out
+async function performCheckOut() {
+    if (!isCheckedIn || !todayRecord) {
         showToast('You need to check in first!');
         return;
     }
     
-    const checkOutTime = new Date();
-    const duration = Math.round((checkOutTime - new Date(checkInTime)) / 1000 / 60); // minutes
-    
-    isCheckedIn = false;
-    checkInTime = null;
-    
-    // Update UI
-    const badge = document.getElementById('status-badge');
-    badge.textContent = 'Not Checked In';
-    badge.classList.remove('active');
-    
-    // Update last record with check out
-    const records = JSON.parse(localStorage.getItem('attendance_records') || '[]');
-    if (records.length > 0) {
-        const lastRecord = records[records.length - 1];
-        if (!lastRecord.checkOut) {
-            lastRecord.checkOut = checkOutTime.toISOString();
-            lastRecord.duration = duration;
-        }
-        localStorage.setItem('attendance_records', JSON.stringify(records));
-    }
-    
-    localStorage.removeItem('attendance_status');
-    
-    showToast(`Checked out! Duration: ${duration} mins`);
-}
-
-// Load status from localStorage
-function loadStatus() {
-    const saved = localStorage.getItem('attendance_status');
-    if (saved) {
-        const data = JSON.parse(saved);
-        if (data.isCheckedIn) {
-            isCheckedIn = true;
-            checkInTime = new Date(data.checkInTime);
-            
-            const badge = document.getElementById('status-badge');
-            badge.textContent = 'Checked In';
-            badge.classList.add('active');
-        }
+    try {
+        const now = new Date();
+        const checkInTime = new Date(todayRecord.check_in);
+        const durationMinutes = Math.round((now - checkInTime) / 1000 / 60);
+        
+        const { error } = await supabase
+            .from('attendance')
+            .update({
+                check_out: now.toISOString(),
+                duration_minutes: durationMinutes
+            })
+            .eq('id', todayRecord.id);
+        
+        if (error) throw error;
+        
+        isCheckedIn = false;
+        todayRecord = null;
+        
+        updateStatusUI('Checked Out');
+        showToast(`Checked out! Duration: ${durationMinutes} mins`);
+        
+    } catch (error) {
+        console.error('Check-out error:', error);
+        showToast('Failed to check out');
     }
 }
 

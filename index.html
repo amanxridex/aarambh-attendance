@@ -15,14 +15,8 @@
     <!-- Favicon -->
     <link rel="icon" href="assets/aarambh.ico">
     <link rel="shortcut icon" href="assets/aarambh.ico">
-    
-    <!-- Apple Touch Icon (optional - uses same ico or create png) -->
     <link rel="apple-touch-icon" href="assets/aarambh.ico">
-    
-    <!-- Manifest -->
     <link rel="manifest" href="manifest.json">
-    
-    <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -159,39 +153,37 @@
                     <canvas id="camera-canvas" style="display: none;"></canvas>
                     <img id="captured-image" style="display: none;" alt="Captured">
                     
-                    <!-- Camera overlay guide -->
                     <div class="camera-overlay">
                         <div class="face-guide"></div>
                         <p class="guide-text">Position your face in the circle</p>
                     </div>
                     
-                    <!-- Timestamp overlay -->
                     <div class="timestamp-overlay" id="camera-timestamp">
                         --:--:--
                     </div>
                 </div>
                 
-                <!-- Camera controls -->
                 <div class="camera-controls" id="camera-controls">
                     <button class="capture-btn" onclick="captureSelfie()" id="capture-btn">
                         <div class="capture-ring"></div>
                     </button>
                 </div>
                 
-                <!-- Preview controls -->
                 <div class="preview-controls" id="preview-controls" style="display: none;">
                     <button class="retake-btn" onclick="retakeSelfie()">
                         <i class="fas fa-redo"></i>
                         Retake
                     </button>
-                    <button class="submit-btn-camera" onclick="submitCheckIn()">
+                    <button class="submit-btn-camera" onclick="submitCheckIn()" id="submit-btn">
                         <i class="fas fa-check"></i>
-                        Submit Check In
+                        <span class="btn-text">Submit Check In</span>
+                        <div class="btn-loader" style="display: none;">
+                            <div class="spinner"></div>
+                        </div>
                     </button>
                 </div>
             </div>
             
-            <!-- Location info -->
             <div class="location-info" id="location-info">
                 <i class="fas fa-map-marker-alt"></i>
                 <span>Fetching location...</span>
@@ -200,23 +192,22 @@
     </div>
 
     <script>
-        // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
-                    .then(registration => {
-                        console.log('SW registered:', registration);
-                    })
-                    .catch(error => {
-                        console.log('SW registration failed:', error);
-                    });
+                    .then(registration => console.log('SW registered'))
+                    .catch(error => console.log('SW failed:', error));
             });
         }
-        
-        // Prevent default browser zoom on double tap
         document.addEventListener('dblclick', function(event) {
             event.preventDefault();
         }, { passive: false });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <script>
+        const SUPABASE_URL = 'https://zbfgytxlnnddkurhiziy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZmd5dHhsbm5kZGt1cmhpeml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMjkxODksImV4cCI6MjA4NjgwNTE4OX0.RKsFVWA1gktyXa1BqRqYv_i6_74OnEHdJatg03WeDMM';
+        window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
     <script src="script.js"></script>
 </body>
