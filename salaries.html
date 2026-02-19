@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salary Management - Aarambh Attendance</title>
+    <link rel="icon" href="assets/aarambh.ico">
+    <link rel="stylesheet" href="salaries.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <a href="dashboard.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="page-title">SALARIES</h1>
+            <div class="header-actions">
+                <button class="btn-icon" onclick="openBulkUpdate()">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-icon" onclick="exportSalaries()">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Month Selector -->
+        <div class="month-bar">
+            <button class="month-nav" onclick="changeMonth(-1)">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <div class="month-info">
+                <span class="month-name" id="current-month">February 2026</span>
+                <span class="payroll-status" id="payroll-status">Processing</span>
+            </div>
+            <button class="month-nav" onclick="changeMonth(1)">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="stats-row">
+            <div class="stat-pill">
+                <i class="fas fa-money-bill-wave"></i>
+                <div class="pill-info">
+                    <span class="pill-value" id="total-payroll">₹0</span>
+                    <span class="pill-label">Total Payroll</span>
+                </div>
+            </div>
+            <div class="stat-pill">
+                <i class="fas fa-wallet"></i>
+                <div class="pill-info">
+                    <span class="pill-value" id="total-paid">₹0</span>
+                    <span class="pill-label">Paid</span>
+                </div>
+            </div>
+            <div class="stat-pill danger">
+                <i class="fas fa-hand-holding-usd"></i>
+                <div class="pill-info">
+                    <span class="pill-value" id="total-pending">₹0</span>
+                    <span class="pill-label">Pending</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-bar">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-emp" placeholder="Search employees..." onkeyup="filterSalaries()">
+            </div>
+            <select id="status-filter" onchange="filterSalaries()">
+                <option value="all">All Status</option>
+                <option value="paid">Paid</option>
+                <option value="pending">Pending</option>
+                <option value="partial">Partial</option>
+            </select>
+        </div>
+
+        <!-- Salaries List -->
+        <div class="salaries-list" id="salaries-list">
+            <div class="loading">
+                <div class="spinner"></div>
+                <span>Calculating salaries...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Salary Detail Modal -->
+    <div class="modal" id="salary-modal">
+        <div class="modal-overlay" onclick="closeModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="emp-mini">
+                    <img id="modal-avatar" src="" alt="">
+                    <div>
+                        <h3 id="modal-name">Employee Name</h3>
+                        <span id="modal-id">EMP001</span>
+                    </div>
+                </div>
+                <button class="close-btn" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Salary Config -->
+            <div class="config-section">
+                <h4>Monthly Salary Configuration</h4>
+                <div class="input-group">
+                    <label>Base Salary (₹)</label>
+                    <input type="number" id="base-salary" placeholder="0" onchange="updateSalaryConfig()">
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Daily Wage (₹)</label>
+                        <input type="number" id="daily-wage" readonly>
+                    </div>
+                    <div class="input-group">
+                        <label>Hourly Rate (₹)</label>
+                        <input type="number" id="hourly-rate" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Summary -->
+            <div="attendance-summary">
+                <h4>Attendance This Month</h4>
+                <div class="attendance-cards">
+                    <div class="att-card present">
+                        <i class="fas fa-check-circle"></i>
+                        <span class="att-count" id="att-full">0</span>
+                        <span class="att-label">Full Days</span>
+                    </div>
+                    <div class="att-card half">
+                        <i class="fas fa-adjust"></i>
+                        <span class="att-count" id="att-half">0</span>
+                        <span class="att-label">Half Days</span>
+                    </div>
+                    <div class="att-card absent">
+                        <i class="fas fa-times-circle"></i>
+                        <span class="att-count" id="att-absent">0</span>
+                        <span class="att-label">Absent</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calculation Breakdown -->
+            <div class="calculation-section">
+                <h4>Salary Calculation</h4>
+                <div class="calc-rows">
+                    <div class="calc-row">
+                        <span>Full Days Pay</span>
+                        <span id="calc-full">₹0</span>
+                    </div>
+                    <div class="calc-row">
+                        <span>Half Days Pay (50%)</span>
+                        <span id="calc-half">₹0</span>
+                    </div>
+                    <div class="calc-row">
+                        <span>Overtime Pay</span>
+                        <span id="calc-overtime">₹0</span>
+                    </div>
+                    <div class="calc-row bonus">
+                        <span>Bonus</span>
+                        <input type="number" id="bonus-input" value="0" onchange="calculateTotals()">
+                    </div>
+                    <div class="calc-row deduction">
+                        <span>Advance Taken</span>
+                        <span id="calc-advance">₹0</span>
+                    </div>
+                    <div class="calc-row deduction">
+                        <span>Other Deductions</span>
+                        <input type="number" id="deduction-input" value="0" onchange="calculateTotals()">
+                    </div>
+                    <div class="calc-row total">
+                        <span>Net Payable</span>
+                        <span id="calc-net">₹0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment History -->
+            <div class="payment-history">
+                <h4>Payment History</h4>
+                <div class="history-list" id="payment-history-list">
+                    <!-- Generated by JS -->
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal()">Close</button>
+                <button class="btn-warning" onclick="recordAdvance()">
+                    <i class="fas fa-hand-holding-usd"></i> Advance
+                </button>
+                <button class="btn-primary" onclick="processPayment()">
+                    <i class="fas fa-check-circle"></i> Process Payment
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advance Modal -->
+    <div class="modal small" id="advance-modal">
+        <div class="modal-overlay" onclick="closeAdvanceModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Record Advance</h3>
+                <button class="close-btn" onclick="closeAdvanceModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="form-group">
+                <label>Advance Amount (₹)</label>
+                <input type="number" id="advance-amount" placeholder="Enter amount">
+            </div>
+            <div class="form-group">
+                <label>Reason (Optional)</label>
+                <input type="text" id="advance-reason" placeholder="e.g., Medical emergency">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeAdvanceModal()">Cancel</button>
+                <button class="btn-primary" onclick="saveAdvance()">Save Advance</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Update Modal -->
+    <div class="modal" id="bulk-modal">
+        <div class="modal-overlay" onclick="closeBulkModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Bulk Salary Update</h3>
+                <button class="close-btn" onclick="closeBulkModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="form-group">
+                <label>Department</label>
+                <select id="bulk-dept">
+                    <option value="all">All Departments</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="Design">Design</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="HR">HR</option>
+                    <option value="Sales">Sales</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Base Salary (₹)</label>
+                <input type="number" id="bulk-salary" placeholder="Enter base salary for selected">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeBulkModal()">Cancel</button>
+                <button class="btn-primary" onclick="applyBulkUpdate()">Apply to All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <script>
+        const SUPABASE_URL = 'https://zbfgytxlnnddkurhiziy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZmd5dHhsbm5kZGt1cmhpeml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMjkxODksImV4cCI6MjA4NjgwNTE4OX0.RKsFVWA1gktyXa1BqRqYv_i6_74OnEHdJatg03WeDMM';
+        window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+    <script src="salaries.js"></script>
+</body>
+</html>
