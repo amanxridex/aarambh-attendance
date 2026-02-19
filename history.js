@@ -1,65 +1,93 @@
-// Current view state
+const supabase = window.supabaseClient;
+
+// State
+let currentUser = null;
 let currentDate = new Date();
 let selectedDate = null;
+let attendanceData = {};
 
-// Sample data - Replace with your actual data source
-const attendanceData = generateSampleData();
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+});
 
-function generateSampleData() {
-    const data = {};
-    const today = new Date();
+// Check authentication
+async function checkAuth() {
+    const session = localStorage.getItem('aarambh_session') || sessionStorage.getItem('aarambh_session');
     
-    // Generate sample data for current month
-    for (let i = 1; i <= 28; i++) {
-        const date = new Date(today.getFullYear(), today.getMonth(), i);
-        const dateKey = formatDateKey(date);
-        
-        // Random status for demo
-        const rand = Math.random();
-        if (rand > 0.2) { // 80% present
-            const checkIn = new Date(date);
-            checkIn.setHours(8 + Math.floor(Math.random() * 2), Math.floor(Math.random() * 60));
-            
-            const checkOut = new Date(date);
-            checkOut.setHours(17 + Math.floor(Math.random() * 2), Math.floor(Math.random() * 60));
-            
-            data[dateKey] = {
-                status: 'present',
-                checkIn: checkIn,
-                checkOut: checkOut,
-                duration: Math.round((checkOut - checkIn) / (1000 * 60)) // minutes
-            };
-        } else if (rand > 0.1) { // 10% half day
-            const checkIn = new Date(date);
-            checkIn.setHours(9, 0);
-            
-            const checkOut = new Date(date);
-            checkOut.setHours(13, 0);
-            
-            data[dateKey] = {
-                status: 'half-day',
-                checkIn: checkIn,
-                checkOut: checkOut,
-                duration: 240
-            };
-        } else { // 10% absent
-            data[dateKey] = {
-                status: 'absent',
-                checkIn: null,
-                checkOut: null,
-                duration: 0
-            };
-        }
+    if (!session) {
+        window.location.href = 'auth.html';
+        return;
     }
-    return data;
+    
+    const sessionData = JSON.parse(session);
+    currentUser = sessionData.user;
+    
+    if (!currentUser) {
+        window.location.href = 'auth.html';
+        return;
+    }
+    
+    await loadMonthData();
 }
 
-function formatDateKey(date) {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+// Load attendance data for current month
+async function loadMonthData() {
+    try {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+        const endDate = `${year}-${String(month + 1).padStart(2, '0')}-31`;
+        
+        const { data, error } = await supabase
+            .from('attendance')
+            .select('*')
+            .eq('employee_id', currentUser.id)
+            .gte('date', startDate)
+            .lte('date', endDate)
+            .order('date', { ascending: true });
+        
+        if (error) throw error;
+        
+        // Convert to object keyed by date
+        attendanceData = {};
+        data?.forEach(record => {
+            attendanceData[record.date] = record;
+        });
+        
+        renderCalendar();
+        
+        // Select today by default if in current month
+        const today = new Date();
+        if (today.getMonth() === month && today.getFullYear() === year) {
+            selectDate(today);
+        }
+        
+    } catch (error) {
+        console.error('Error loading data:', error);
+        showToast('Failed to load attendance data');
+    }
 }
 
-function formatTime(date) {
-    if (!date) return '--:--';
+// Determine status based on duration
+function getStatus(record) {
+    if (!record || !record.check_in) {
+        return 'absent'; // 🔴 Red - No record
+    }
+    
+    const duration = record.duration_minutes || 0;
+    
+    if (duration >= 240) { // 4 hours = 240 minutes
+        return 'present'; // 🟢 Green - Full day (4+ hours)
+    } else {
+        return 'half-day'; // 🟡 Orange - Half day (0-4 hours)
+    }
+}
+
+// Format time from ISO string
+function formatTime(isoString) {
+    if (!isoString) return '--:--';
+    const date = new Date(isoString);
     return date.toLocaleTimeString('en-US', { 
         hour: '2-digit', 
         minute: '2-digit',
@@ -67,6 +95,7 @@ function formatTime(date) {
     });
 }
 
+// Format duration
 function formatDuration(minutes) {
     if (!minutes || minutes === 0) return '--';
     const hours = Math.floor(minutes / 60);
@@ -74,22 +103,26 @@ function formatDuration(minutes) {
     return `${hours}h ${mins}m`;
 }
 
+// Get month name
 function getMonthName(monthIndex) {
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 
                    'July', 'August', 'September', 'October', 'November', 'December'];
     return months[monthIndex];
 }
 
+// Get day name
 function getDayName(dayIndex) {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return days[dayIndex];
 }
 
-function changeMonth(direction) {
+// Change month
+async function changeMonth(direction) {
     currentDate.setMonth(currentDate.getMonth() + direction);
-    renderCalendar();
+    await loadMonthData();
 }
 
+// Render calendar
 function renderCalendar() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -116,21 +149,24 @@ function renderCalendar() {
     
     // Date cards
     const today = new Date();
+    const todayKey = today.toISOString().split('T')[0];
+    
     for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(year, month, day);
         const dateKey = formatDateKey(date);
         const record = attendanceData[dateKey];
+        const status = getStatus(record);
         
         const card = document.createElement('div');
         card.className = 'date-card';
         
-        // Check if today
-        if (date.toDateString() === today.toDateString()) {
+        // Today highlight
+        if (dateKey === todayKey) {
             card.classList.add('today');
         }
         
-        // Check if selected
-        if (selectedDate && date.toDateString() === selectedDate.toDateString()) {
+        // Selected highlight
+        if (selectedDate && formatDateKey(selectedDate) === dateKey) {
             card.classList.add('selected');
         }
         
@@ -147,27 +183,32 @@ function renderCalendar() {
         card.appendChild(dayName);
         
         // Status dot
-        if (record) {
-            const dot = document.createElement('div');
-            dot.className = `status-dot ${record.status}`;
-            card.appendChild(dot);
-        }
+        const dot = document.createElement('div');
+        dot.className = `status-dot ${status}`;
+        card.appendChild(dot);
         
         card.onclick = () => selectDate(date);
         grid.appendChild(card);
     }
 }
 
+function formatDateKey(date) {
+    return date.toISOString().split('T')[0];
+}
+
+// Select date and show details
 function selectDate(date) {
     selectedDate = date;
     renderCalendar();
     showDayDetails(date);
 }
 
+// Show day details
 function showDayDetails(date) {
     const details = document.getElementById('day-details');
     const dateKey = formatDateKey(date);
     const record = attendanceData[dateKey];
+    const status = getStatus(record);
     
     // Update header
     document.getElementById('selected-date').textContent = date.toLocaleDateString('en-US', {
@@ -178,31 +219,51 @@ function showDayDetails(date) {
     });
     
     const statusBadge = document.getElementById('detail-status');
+    const selfiePreview = document.getElementById('selfie-preview');
+    const selfieImage = document.getElementById('selfie-image');
     
     if (!record) {
-        statusBadge.textContent = 'No Record';
-        statusBadge.className = 'status-badge';
+        // No record - Absent
+        statusBadge.textContent = 'Absent';
+        statusBadge.className = 'status-badge absent';
         document.getElementById('check-in-time').textContent = '--:--';
         document.getElementById('check-out-time').textContent = '--:--';
         document.getElementById('duration-value').textContent = '--';
+        selfiePreview.style.display = 'none';
     } else {
-        statusBadge.textContent = record.status.replace('-', ' ');
-        statusBadge.className = `status-badge ${record.status}`;
-        document.getElementById('check-in-time').textContent = formatTime(record.checkIn);
-        document.getElementById('check-out-time').textContent = formatTime(record.checkOut);
-        document.getElementById('duration-value').textContent = formatDuration(record.duration);
+        // Has record
+        const statusText = status === 'present' ? 'Full Day' : 
+                          status === 'half-day' ? 'Half Day' : 'Absent';
+        
+        statusBadge.textContent = statusText;
+        statusBadge.className = `status-badge ${status}`;
+        
+        document.getElementById('check-in-time').textContent = formatTime(record.check_in);
+        document.getElementById('check-out-time').textContent = formatTime(record.check_out);
+        document.getElementById('duration-value').textContent = formatDuration(record.duration_minutes);
+        
+        // Show selfie if available
+        if (record.selfie_url) {
+            selfieImage.src = record.selfie_url;
+            selfiePreview.style.display = 'block';
+        } else {
+            selfiePreview.style.display = 'none';
+        }
     }
     
     details.classList.add('show');
 }
 
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    renderCalendar();
-    
-    // Select today by default
-    const today = new Date();
-    if (today.getMonth() === currentDate.getMonth()) {
-        selectDate(today);
-    }
-});
+// Toast notification
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast show';
+    toast.innerHTML = `
+        <div class="toast-content">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}

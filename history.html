@@ -74,9 +74,22 @@
                 <i class="fas fa-clock"></i>
                 <span>Duration: <strong id="duration-value">--</strong></span>
             </div>
+            
+            <!-- Selfie Preview -->
+            <div class="selfie-preview" id="selfie-preview" style="display: none;">
+                <span class="preview-label">Check-in Selfie</span>
+                <img id="selfie-image" src="" alt="Selfie">
+            </div>
         </div>
     </div>
 
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <script>
+        const SUPABASE_URL = 'https://zbfgytxlnnddkurhiziy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZmd5dHhsbm5kZGt1cmhpeml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMjkxODksImV4cCI6MjA4NjgwNTE4OX0.RKsFVWA1gktyXa1BqRqYv_i6_74OnEHdJatg03WeDMM';
+        window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
     <script src="history.js"></script>
 </body>
 </html>
