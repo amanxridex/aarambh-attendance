@@ -1,39 +1,81 @@
-// Load profile data from localStorage or use defaults
-function loadProfile() {
-    const saved = localStorage.getItem('profile_data');
-    if (saved) {
-        const data = JSON.parse(saved);
-        updateProfileUI(data);
+const supabase = window.supabaseClient;
+
+let currentUser = null;
+let userData = null;
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    checkAuth();
+});
+
+// Check if user is logged in
+async function checkAuth() {
+    const session = localStorage.getItem('aarambh_session') || sessionStorage.getItem('aarambh_session');
+    
+    if (!session) {
+        window.location.href = 'auth.html';
+        return;
+    }
+    
+    const sessionData = JSON.parse(session);
+    currentUser = sessionData.user;
+    
+    if (!currentUser) {
+        window.location.href = 'auth.html';
+        return;
+    }
+    
+    await loadProfile();
+}
+
+// Load profile from Supabase
+async function loadProfile() {
+    try {
+        const { data, error } = await supabase
+            .from('employees')
+            .select('*')
+            .eq('id', currentUser.id)
+            .single();
+        
+        if (error) throw error;
+        
+        userData = data;
+        updateProfileUI(userData);
+    } catch (error) {
+        console.error('Error loading profile:', error);
+        showToast('Failed to load profile', 'error');
     }
 }
 
 function updateProfileUI(data) {
-    document.getElementById('profile-name').textContent = data.name;
-    document.getElementById('profile-designation').textContent = data.designation;
-    document.getElementById('profile-mobile').textContent = data.mobile;
-    document.getElementById('profile-email').textContent = data.email;
-    document.getElementById('profile-id').textContent = data.empId || 'EMP2024001';
-    document.getElementById('profile-dept').textContent = data.department || 'Engineering';
+    // Set text fields
+    document.getElementById('profile-name').textContent = data.name || 'No Name';
+    document.getElementById('profile-designation').textContent = data.designation || 'No Designation';
+    document.getElementById('profile-username').textContent = data.username || '-';
+    document.getElementById('profile-mobile').textContent = data.mobile || '-';
+    document.getElementById('profile-email').textContent = data.email || '-';
+    document.getElementById('profile-id').textContent = data.emp_id || '-';
+    document.getElementById('profile-dept').textContent = data.department || '-';
     
-    if (data.image) {
-        document.getElementById('profile-img').src = data.image;
+    // Set profile image
+    const imgElement = document.getElementById('profile-img');
+    if (data.profile_image) {
+        imgElement.src = data.profile_image;
+    } else {
+        // Default avatar with initials
+        const initials = data.name ? data.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
+        imgElement.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name || 'User')}&background=random&color=fff&size=200`;
     }
 }
 
 // Edit profile
 function editProfile() {
-    const modal = document.getElementById('edit-modal');
-    const name = document.getElementById('profile-name').textContent;
-    const mobile = document.getElementById('profile-mobile').textContent;
-    const email = document.getElementById('profile-email').textContent;
-    const designation = document.getElementById('profile-designation').textContent;
+    if (!userData) return;
     
-    document.getElementById('edit-name').value = name;
-    document.getElementById('edit-mobile').value = mobile;
-    document.getElementById('edit-email').value = email;
-    document.getElementById('edit-designation').value = designation;
+    document.getElementById('edit-mobile').value = userData.mobile || '';
+    document.getElementById('edit-email').value = userData.email || '';
     
-    modal.classList.add('show');
+    document.getElementById('edit-modal').classList.add('show');
 }
 
 // Close modal
@@ -42,94 +84,107 @@ function closeModal() {
 }
 
 // Save profile
-function saveProfile(event) {
+async function saveProfile(event) {
     event.preventDefault();
     
-    const data = {
-        name: document.getElementById('edit-name').value,
-        mobile: document.getElementById('edit-mobile').value,
-        email: document.getElementById('edit-email').value,
-        designation: document.getElementById('edit-designation').value,
-        empId: document.getElementById('profile-id').textContent,
-        department: document.getElementById('profile-dept').textContent,
-        image: document.getElementById('profile-img').src
+    if (!userData) return;
+    
+    const updates = {
+        mobile: document.getElementById('edit-mobile').value.trim(),
+        email: document.getElementById('edit-email').value.trim(),
+        updated_at: new Date().toISOString()
     };
     
-    localStorage.setItem('profile_data', JSON.stringify(data));
-    updateProfileUI(data);
-    closeModal();
-    showToast('Profile updated successfully!');
+    try {
+        const { error } = await supabase
+            .from('employees')
+            .update(updates)
+            .eq('id', userData.id);
+        
+        if (error) throw error;
+        
+        // Update local data
+        userData = { ...userData, ...updates };
+        updateProfileUI(userData);
+        closeModal();
+        showToast('Profile updated successfully!');
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        showToast('Failed to update profile', 'error');
+    }
 }
 
-// Change image - Open file picker
-function changeImage() {
-    // Create hidden file input
+// Change image - Upload to Supabase Storage
+async function changeImage() {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = 'image/*';
-    fileInput.capture = 'environment'; // Allows camera on mobile too
+    fileInput.capture = 'environment';
     
-    fileInput.onchange = function(e) {
+    fileInput.onchange = async function(e) {
         const file = e.target.files[0];
         if (!file) return;
         
-        // Validate file type
+        // Validate
         if (!file.type.startsWith('image/')) {
             showToast('Please select an image file');
             return;
         }
         
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            showToast('Image size should be less than 5MB');
+        if (file.size > 2 * 1024 * 1024) {
+            showToast('Image size should be less than 2MB');
             return;
         }
         
-        // Read and display image
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const imageData = event.target.result;
+        try {
+            showToast('Uploading...');
             
-            // Update profile image
-            document.getElementById('profile-img').src = imageData;
+            // Create unique filename
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${userData.id}_${Date.now()}.${fileExt}`;
+            const filePath = `profile_images/${fileName}`;
             
-            // Save to localStorage
-            const saved = localStorage.getItem('profile_data');
-            let data;
-            if (saved) {
-                data = JSON.parse(saved);
-            } else {
-                // Create default data if none exists
-                data = {
-                    name: document.getElementById('profile-name').textContent,
-                    designation: document.getElementById('profile-designation').textContent,
-                    mobile: document.getElementById('profile-mobile').textContent,
-                    email: document.getElementById('profile-email').textContent,
-                    empId: document.getElementById('profile-id').textContent,
-                    department: document.getElementById('profile-dept').textContent
-                };
-            }
-            data.image = imageData;
-            localStorage.setItem('profile_data', JSON.stringify(data));
+            // Upload to Supabase Storage
+            const { error: uploadError } = await supabase.storage
+                .from('employee-assets')
+                .upload(filePath, file, {
+                    cacheControl: '3600',
+                    upsert: true
+                });
             
+            if (uploadError) throw uploadError;
+            
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('employee-assets')
+                .getPublicUrl(filePath);
+            
+            // Update employee record with new image URL
+            const { error: updateError } = await supabase
+                .from('employees')
+                .update({ profile_image: publicUrl })
+                .eq('id', userData.id);
+            
+            if (updateError) throw updateError;
+            
+            // Update UI
+            userData.profile_image = publicUrl;
+            document.getElementById('profile-img').src = publicUrl;
             showToast('Profile picture updated!');
-        };
-        
-        reader.onerror = function() {
-            showToast('Error reading image file');
-        };
-        
-        reader.readAsDataURL(file);
+            
+        } catch (error) {
+            console.error('Upload error:', error);
+            showToast('Failed to upload image', 'error');
+        }
     };
     
-    // Trigger file picker
     fileInput.click();
 }
 
 // Logout
 function logout() {
-    localStorage.removeItem('auth_user');
-    sessionStorage.removeItem('auth_user');
+    localStorage.removeItem('aarambh_session');
+    sessionStorage.removeItem('aarambh_session');
     showToast('Logged out successfully!');
     setTimeout(() => {
         window.location.href = 'auth.html';
@@ -137,9 +192,10 @@ function logout() {
 }
 
 // Show toast
-function showToast(message) {
+function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     document.getElementById('toast-message').textContent = message;
+    toast.className = `toast ${type}`;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
@@ -149,9 +205,4 @@ document.getElementById('edit-modal').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) {
         closeModal();
     }
-});
-
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    loadProfile();
 });
