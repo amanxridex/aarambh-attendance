@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports & Analytics - Aarambh Attendance</title>
+    <link rel="icon" href="assets/aarambh.ico">
+    <link rel="stylesheet" href="reports.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for beautiful graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <a href="dashboard.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="page-title">REPORTS</h1>
+            <div class="header-actions">
+                <button class="btn-icon" onclick="exportMasterReport()">
+                    <i class="fas fa-file-export"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Date Range Filter -->
+        <div class="filter-section">
+            <div class="date-selector">
+                <button class="date-tab active" onclick="setDateRange('week')">Last 7 Days</button>
+                <button class="date-tab" onclick="setDateRange('month')">This Month</button>
+                <button class="date-tab" onclick="openCustomDateModal()">Custom</button>
+            </div>
+            <div class="current-range" id="current-range-display">
+                Loading...
+            </div>
+        </div>
+
+        <!-- KPI Overview Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-icon"><i class="fas fa-users"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-value" id="kpi-total-emps">0</span>
+                    <span class="kpi-label">Total Staff</span>
+                </div>
+            </div>
+            <div class="kpi-card present">
+                <div class="kpi-icon"><i class="fas fa-calendar-check"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-value" id="kpi-avg-presence">0%</span>
+                    <span class="kpi-label">Avg Attendance</span>
+                </div>
+            </div>
+            <div class="kpi-card hours">
+                <div class="kpi-icon"><i class="fas fa-clock"></i></div>
+                <div class="kpi-info">
+                    <span class="kpi-value" id="kpi-avg-hours">0h</span>
+                    <span class="kpi-label">Avg Daily Hours</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Trends Chart -->
+        <div class="report-section">
+            <div class="section-header">
+                <h3>Attendance Trends</h3>
+                <span class="section-subtitle">Daily present vs. absent</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="trendsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Department Breakdown Chart -->
+        <div class="report-section split">
+            <div class="report-half">
+                <div class="section-header">
+                    <h3>By Department</h3>
+                </div>
+                <div class="donut-container">
+                    <canvas id="deptChart"></canvas>
+                </div>
+            </div>
+
+            <div class="report-half">
+                <div class="section-header">
+                    <h3>Top Punctuality</h3>
+                </div>
+                <div class="leaderboard" id="leaderboard">
+                    <div class="loading-mini">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Date Range Modal -->
+    <div class="modal" id="date-modal">
+        <div class="modal-overlay" onclick="closeCustomDateModal()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Custom Date Range</h3>
+                <button class="close-btn" onclick="closeCustomDateModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="form-group">
+                <label>Start Date</label>
+                <input type="date" id="date-start">
+            </div>
+            <div class="form-group">
+                <label>End Date</label>
+                <input type="date" id="date-end">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeCustomDateModal()">Cancel</button>
+                <button class="btn-primary" onclick="applyCustomDate()">Apply Filter</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <script>
+        const SUPABASE_URL = 'https://zbfgytxlnnddkurhiziy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpiZmd5dHhsbm5kZGt1cmhpeml5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEyMjkxODksImV4cCI6MjA4NjgwNTE4OX0.RKsFVWA1gktyXa1BqRqYv_i6_74OnEHdJatg03WeDMM';
+        window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+    <script src="reports.js"></script>
+</body>
+
+</html>
