@@ -182,6 +182,10 @@ body {
     background: var(--accent-red);
 }
 
+.stat-card.half-day::before {
+    background: var(--accent-orange);
+}
+
 .stat-card.total::before {
     background: var(--accent-blue);
 }
@@ -208,6 +212,11 @@ body {
 .stat-card.absent .stat-icon {
     background: rgba(239, 68, 68, 0.15);
     color: var(--accent-red);
+}
+
+.stat-card.half-day .stat-icon {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--accent-orange);
 }
 
 .stat-card.total .stat-icon {
@@ -543,43 +552,26 @@ body {
     .app-container {
         padding: 16px;
     }
-    
+
     .stats-grid {
         gap: 10px;
     }
-    
+
     .stat-value {
         font-size: 24px;
     }
-    
+
     .donut-chart-wrapper {
         width: 160px;
         height: 160px;
     }
-    
+
     .donut-value {
         font-size: 28px;
     }
 }
 
-.stat-card.half-day {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.05));
-    border-color: rgba(245, 158, 11, 0.3);
-}
-
-.stat-card.half-day .stat-icon {
-    background: rgba(245, 158, 11, 0.2);
-    color: #f59e0b;
-}
-
-.half-segment {
-    stroke: #f59e0b;
-}
-
-.legend .half {
-    color: #f59e0b;
-}
-
+/* Base SVG Animations */
 .donut-segment {
     fill: none;
     stroke-width: 20;
@@ -587,13 +579,13 @@ body {
 }
 
 .present-segment {
-    stroke: #00d084;
+    stroke: var(--accent-green);
 }
 
 .half-segment {
-    stroke: #f59e0b;
+    stroke: var(--accent-orange);
 }
 
 .absent-segment {
-    stroke: #ef4444;
+    stroke: var(--accent-red);
 }
