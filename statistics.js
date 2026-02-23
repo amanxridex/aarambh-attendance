@@ -35,12 +35,10 @@ async function changeMonth(direction) {
 
 function getStatus(record) {
     if (!record || !record.check_in) return 'absent';
-    if (!record.check_out) return 'active'; // Currently checked in
 
     const duration = record.duration_minutes || 0;
-    if (duration >= 360) return 'present'; // 6 hours
-    if (duration >= 180) return 'half-day'; // 3 hours
-    return 'absent';
+    if (duration >= 240) return 'present'; // 4 hours
+    return 'half-day'; // 0-4 hours
 }
 
 async function renderStatistics() {
@@ -77,8 +75,7 @@ async function renderStatistics() {
         }
 
         for (let day = 1; day <= loopEndDay; day++) {
-            const date = new Date(year, month, day);
-            if (date.getDay() !== 0 && date.getDay() !== 6) workingDays++;
+            workingDays++;
         }
 
         // Count stats
@@ -88,7 +85,6 @@ async function renderStatistics() {
         for (let day = 1; day <= loopEndDay; day++) {
             const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const date = new Date(year, month, day);
-            if (date.getDay() === 0 || date.getDay() === 6) continue;
 
             const record = records.find(r => r.date === dateKey);
             const status = getStatus(record);
@@ -99,8 +95,6 @@ async function renderStatistics() {
                     totalHours += (record.duration_minutes || 0) / 60;
                     daysWithHoursCount++;
                 }
-            } else if (status === 'active') {
-                present++; // Count as present today, but don't add 0 to averages
             } else if (status === 'half-day') {
                 halfDay++;
                 if (record && record.check_out) {
