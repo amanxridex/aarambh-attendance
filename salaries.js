@@ -1,10 +1,11 @@
 const supabase = window.supabaseClient;
 
 let employees = [];
+let salaries = [];
+let attendanceData = {};
+let currentDate = new Date();
 let currentEmpId = null;
-let currentModalDate = new Date();
-let todayAttendance = {};
-let selectedDateData = null;
+let currentSalaryData = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
@@ -21,41 +22,16 @@ async function checkAuth() {
         window.location.href = 'index.html';
         return;
     }
-    await loadTodayAttendance();
+    await loadData();
+}
+
+async function loadData() {
     await loadEmployees();
-}
-
-async function loadTodayAttendance() {
-    const today = new Date().toISOString().split('T')[0];
-    try {
-        const { data, error } = await supabase
-            .from('attendance')
-            .select('*')
-            .eq('date', today);
-        
-        if (error) throw error;
-        data?.forEach(record => {
-            todayAttendance[record.employee_id] = record;
-        });
-        
-        updateOverviewStats();
-    } catch (error) {
-        console.error('Error loading today attendance:', error);
-    }
-}
-
-function updateOverviewStats() {
-    const present = Object.values(todayAttendance).filter(a => {
-        // PRESENT if checked in (don't wait for checkout)
-        return a.check_in !== null && a.check_in !== undefined;
-    }).length;
-    
-    const total = employees.length;
-    const absent = total - present;
-    
-    document.getElementById('total-count').textContent = total;
-    document.getElementById('present-count').textContent = present;
-    document.getElementById('absent-count').textContent = absent;
+    await loadSalaries();
+    await loadAttendance();
+    calculateAllSalaries();
+    renderSalaries();
+    updateStats();
 }
 
 async function loadEmployees() {
@@ -63,480 +39,536 @@ async function loadEmployees() {
         const { data, error } = await supabase
             .from('employees')
             .select('*')
-            .order('created_at', { ascending: false });
+            .order('name');
         
         if (error) throw error;
         employees = data || [];
-        document.getElementById('emp-count').textContent = employees.length;
-        updateOverviewStats();
-        renderEmployees();
     } catch (error) {
         showToast('Failed to load employees', 'error');
     }
 }
 
-function getEmployeeStatus(empId) {
-    const record = todayAttendance[empId];
-    // ONLINE if checked in (don't wait for checkout)
-    if (record && record.check_in) return 'online';
-    return 'offline';
+async function loadSalaries() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+    
+    try {
+        const { data, error } = await supabase
+            .from('salaries')
+            .select('*')
+            .eq('month', monthKey);
+        
+        if (error) throw error;
+        salaries = data || [];
+    } catch (error) {
+        // Table might not exist, continue with empty
+        salaries = [];
+    }
 }
 
-function renderEmployees(filtered = employees) {
-    const list = document.getElementById('employees-list');
+async function loadAttendance() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${lastDay}`;
     
-    if (filtered.length === 0) {
-        list.innerHTML = '<div class="loading">No employees found</div>';
+    try {
+        const { data, error } = await supabase
+            .from('attendance')
+            .select('*')
+            .gte('date', startDate)
+            .lte('date', endDate);
+        
+        if (error) throw error;
+        
+        attendanceData = {};
+        data?.forEach(record => {
+            if (!attendanceData[record.employee_id]) {
+                attendanceData[record.employee_id] = [];
+            }
+            attendanceData[record.employee_id].push(record);
+        });
+    } catch (error) {
+        attendanceData = {};
+    }
+}
+
+function calculateAllSalaries() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+    
+    employees.forEach(emp => {
+        let salaryRecord = salaries.find(s => s.employee_id === emp.id && s.month === monthKey);
+        
+        if (!salaryRecord) {
+            // Create default salary record
+            salaryRecord = {
+                employee_id: emp.id,
+                month: monthKey,
+                base_salary: emp.base_salary || 0,
+                daily_wage: 0,
+                hourly_rate: 0,
+                full_days: 0,
+                half_days: 0,
+                absent_days: 0,
+                overtime_hours: 0,
+                bonus: 0,
+                advance_taken: 0,
+                deductions: 0,
+                earned_amount: 0,
+                net_payable: 0,
+                paid_amount: 0,
+                status: 'pending',
+                created_at: new Date().toISOString()
+            };
+            salaries.push(salaryRecord);
+        }
+        
+        // Calculate from attendance
+        const empAttendance = attendanceData[emp.id] || [];
+        let fullDays = 0, halfDays = 0, absentDays = 0, totalHours = 0;
+        
+        empAttendance.forEach(record => {
+            if (record.check_in) {
+                const duration = record.duration_minutes || 0;
+                const hours = duration / 60;
+                totalHours += hours;
+                
+                if (duration >= 240) fullDays++;
+                else halfDays++;
+            } else {
+                absentDays++;
+            }
+        });
+        
+        // Calculate amounts
+        const baseSalary = salaryRecord.base_salary || 0;
+        const dailyWage = baseSalary / 30;
+        const hourlyRate = dailyWage / 8;
+        
+        const fullDayPay = fullDays * dailyWage;
+        const halfDayPay = halfDays * (dailyWage * 0.5);
+        const overtimePay = Math.max(0, (totalHours - (fullDays * 8 + halfDays * 4))) * hourlyRate * 1.5;
+        
+        const earnedAmount = fullDayPay + halfDayPay + overtimePay;
+        const netPayable = earnedAmount + (salaryRecord.bonus || 0) - (salaryRecord.advance_taken || 0) - (salaryRecord.deductions || 0);
+        
+        // Update record
+        salaryRecord.daily_wage = Math.round(dailyWage);
+        salaryRecord.hourly_rate = Math.round(hourlyRate);
+        salaryRecord.full_days = fullDays;
+        salaryRecord.half_days = halfDays;
+        salaryRecord.absent_days = absentDays;
+        salaryRecord.overtime_hours = Math.round((totalHours - (fullDays * 8 + halfDays * 4)) * 10) / 10;
+        salaryRecord.earned_amount = Math.round(earnedAmount);
+        salaryRecord.net_payable = Math.round(netPayable);
+        
+        // Determine status
+        if (salaryRecord.paid_amount >= netPayable) {
+            salaryRecord.status = 'paid';
+        } else if (salaryRecord.paid_amount > 0) {
+            salaryRecord.status = 'partial';
+        } else {
+            salaryRecord.status = 'pending';
+        }
+    });
+}
+
+function renderSalaries(filtered = null) {
+    const list = document.getElementById('salaries-list');
+    const statusFilter = document.getElementById('status-filter').value;
+    const searchQuery = document.getElementById('search-emp').value.toLowerCase();
+    
+    let displaySalaries = filtered || salaries;
+    
+    // Apply filters
+    if (statusFilter !== 'all') {
+        displaySalaries = displaySalaries.filter(s => s.status === statusFilter);
+    }
+    
+    if (searchQuery) {
+        displaySalaries = displaySalaries.filter(s => {
+            const emp = employees.find(e => e.id === s.employee_id);
+            return emp && (emp.name.toLowerCase().includes(searchQuery) || 
+                          emp.emp_id.toLowerCase().includes(searchQuery));
+        });
+    }
+    
+    if (displaySalaries.length === 0) {
+        list.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-money-bill-wave"></i>
+                <h3>No salary records</h3>
+                <p>No records found for this month</p>
+            </div>
+        `;
         return;
     }
     
-    list.innerHTML = filtered.map(emp => {
-        const status = getEmployeeStatus(emp.id);
-        const record = todayAttendance[emp.id];
-        // Show duration if available, else show "Present" if checked in
-        let timeDisplay = '--';
-        if (record) {
-            if (record.duration_minutes) {
-                timeDisplay = `${Math.floor(record.duration_minutes/60)}h ${record.duration_minutes%60}m`;
-            } else if (record.check_in) {
-                timeDisplay = 'Present';
-            }
-        }
+    list.innerHTML = displaySalaries.map(sal => {
+        const emp = employees.find(e => e.id === sal.employee_id);
+        if (!emp) return '';
+        
+        const progress = sal.net_payable > 0 ? (sal.paid_amount / sal.net_payable) * 100 : 0;
         
         return `
-        <div class="emp-card" onclick="openEmployeeModal('${emp.id}')">
-            <div class="emp-avatar">
-                <img src="${emp.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random&color=fff&size=100`}" alt="${emp.name}">
-                <div class="status-dot ${status}"></div>
-            </div>
-            <div class="emp-info">
-                <div class="emp-name">
-                    ${emp.name}
-                    ${status === 'online' ? '<i class="fas fa-check-circle" style="color: var(--accent-green); font-size: 14px;"></i>' : ''}
+            <div class="salary-card ${sal.status}" onclick="openSalaryModal('${sal.employee_id}')">
+                <div class="salary-header">
+                    <div class="emp-info-sal">
+                        <div class="emp-avatar-sal">
+                            <img src="${emp.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random&color=fff&size=100`}" alt="${emp.name}">
+                        </div>
+                        <div class="emp-details-sal">
+                            <h4>${emp.name}</h4>
+                            <span>${emp.emp_id} • ${emp.department}</span>
+                        </div>
+                    </div>
+                    <span class="status-badge ${sal.status}">${sal.status}</span>
                 </div>
-                <div class="emp-role">${emp.designation}</div>
-                <div class="emp-meta">
-                    <span class="dept-tag">${emp.department}</span>
-                    <div class="emp-stats">
-                        <span><i class="fas fa-clock"></i> ${timeDisplay}</span>
-                        <span><i class="fas fa-calendar"></i> ${new Date(emp.created_at).toLocaleDateString()}</span>
+                
+                <div class="salary-amounts">
+                    <div class="amount-box earned">
+                        <label>Earned</label>
+                        <span class="value">₹${formatNumber(sal.earned_amount)}</span>
+                    </div>
+                    <div class="amount-box advance">
+                        <label>Advance</label>
+                        <span class="value">₹${formatNumber(sal.advance_taken)}</span>
+                    </div>
+                    <div class="amount-box net">
+                        <label>Net Pay</label>
+                        <span class="value">₹${formatNumber(sal.net_payable)}</span>
                     </div>
                 </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${progress}%"></div>
+                </div>
+                
+                <div class="salary-meta">
+                    <span><i class="fas fa-calendar-check"></i> ${sal.full_days} Full • ${sal.half_days} Half</span>
+                    <span><i class="fas fa-rupee-sign"></i> Paid: ₹${formatNumber(sal.paid_amount)}</span>
+                </div>
             </div>
-            <div class="emp-arrow">
-                <i class="fas fa-chevron-right"></i>
-            </div>
-        </div>
-    `}).join('');
+        `;
+    }).join('');
 }
 
-function searchEmployees() {
-    const query = document.getElementById('search-input').value.toLowerCase();
-    filterAndRender(query, currentDeptFilter);
+function formatNumber(num) {
+    return num.toLocaleString('en-IN');
 }
 
-let currentDeptFilter = 'all';
-
-function filterByDept(dept) {
-    currentDeptFilter = dept;
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    event.target.classList.add('active');
+function updateStats() {
+    const totalPayroll = salaries.reduce((sum, s) => sum + s.net_payable, 0);
+    const totalPaid = salaries.reduce((sum, s) => sum + s.paid_amount, 0);
+    const totalPending = totalPayroll - totalPaid;
     
-    const query = document.getElementById('search-input').value.toLowerCase();
-    filterAndRender(query, dept);
+    document.getElementById('total-payroll').textContent = `₹${formatNumber(totalPayroll)}`;
+    document.getElementById('total-paid').textContent = `₹${formatNumber(totalPaid)}`;
+    document.getElementById('total-pending').textContent = `₹${formatNumber(totalPending)}`;
+    
+    const statusEl = document.getElementById('payroll-status');
+    if (totalPending === 0) {
+        statusEl.textContent = 'Completed';
+        statusEl.className = 'payroll-status';
+    } else {
+        statusEl.textContent = 'Processing';
+        statusEl.className = 'payroll-status pending';
+    }
 }
 
-function filterAndRender(query, dept) {
-    let filtered = employees;
+function filterSalaries() {
+    renderSalaries();
+}
+
+function changeMonth(direction) {
+    currentDate.setMonth(currentDate.getMonth() + direction);
+    document.getElementById('current-month').textContent = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+    loadData();
+}
+
+async function openSalaryModal(empId) {
+    currentEmpId = empId;
+    const emp = employees.find(e => e.id === empId);
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`;
     
-    if (dept !== 'all') {
-        filtered = filtered.filter(e => e.department === dept);
+    let salary = salaries.find(s => s.employee_id === empId && s.month === monthKey);
+    
+    if (!salary) {
+        salary = {
+            employee_id: empId,
+            month: monthKey,
+            base_salary: 0,
+            daily_wage: 0,
+            hourly_rate: 0,
+            full_days: 0,
+            half_days: 0,
+            absent_days: 0,
+            overtime_hours: 0,
+            bonus: 0,
+            advance_taken: 0,
+            deductions: 0,
+            earned_amount: 0,
+            net_payable: 0
+        };
     }
     
-    if (query) {
-        filtered = filtered.filter(emp => 
-            emp.name.toLowerCase().includes(query) ||
-            emp.emp_id.toLowerCase().includes(query) ||
-            emp.username.toLowerCase().includes(query)
-        );
-    }
+    currentSalaryData = salary;
     
-    renderEmployees(filtered);
-}
-
-async function openEmployeeModal(id) {
-    currentEmpId = id;
-    currentModalDate = new Date();
-    const emp = employees.find(e => e.id === id);
-    if (!emp) return;
-    
-    // Update profile header
-    document.getElementById('modal-avatar').src = emp.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random&color=fff&size=200`;
+    // Update UI
+    document.getElementById('modal-avatar').src = emp.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random&color=fff&size=150`;
     document.getElementById('modal-name').textContent = emp.name;
-    document.getElementById('modal-role').textContent = emp.designation;
-    document.getElementById('modal-dept').textContent = emp.department;
     document.getElementById('modal-id').textContent = emp.emp_id;
-    document.getElementById('modal-email').textContent = emp.email || 'No email';
-    document.getElementById('modal-phone').textContent = emp.mobile || 'No phone';
     
-    const status = getEmployeeStatus(emp.id);
-    document.getElementById('status-dot').className = `status-indicator ${status}`;
+    document.getElementById('base-salary').value = salary.base_salary || '';
+    document.getElementById('daily-wage').value = salary.daily_wage || 0;
+    document.getElementById('hourly-rate').value = salary.hourly_rate || 0;
     
-    await loadModalData();
+    document.getElementById('att-full').textContent = salary.full_days;
+    document.getElementById('att-half').textContent = salary.half_days;
+    document.getElementById('att-absent').textContent = salary.absent_days;
     
-    document.getElementById('emp-modal').classList.add('show');
+    calculateTotals();
+    loadPaymentHistory(empId);
+    
+    document.getElementById('salary-modal').classList.add('show');
     document.body.style.overflow = 'hidden';
 }
 
-async function loadModalData() {
-    const emp = employees.find(e => e.id === currentEmpId);
-    if (!emp) return;
+function updateSalaryConfig() {
+    const baseSalary = parseFloat(document.getElementById('base-salary').value) || 0;
+    const dailyWage = Math.round(baseSalary / 30);
+    const hourlyRate = Math.round(dailyWage / 8);
     
-    const year = currentModalDate.getFullYear();
-    const month = currentModalDate.getMonth();
-    const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-    const lastDay = new Date(year, month + 1, 0).getDate();
-    const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${lastDay}`;
+    document.getElementById('daily-wage').value = dailyWage;
+    document.getElementById('hourly-rate').value = hourlyRate;
     
-    document.getElementById('modal-month').textContent = `${currentModalDate.toLocaleString('default', { month: 'long' })} ${year}`;
-    
-    const { data: attendance } = await supabase
-        .from('attendance')
-        .select('*')
-        .eq('employee_id', currentEmpId)
-        .gte('date', monthStart)
-        .lte('date', monthEnd)
-        .order('date', { ascending: false });
-    
-    // Calculate stats
-    let fullDays = 0, halfDays = 0, absentDays = 0, totalHours = 0;
-    const attendanceMap = {};
-    
-    attendance?.forEach(record => {
-        attendanceMap[record.date] = record;
-        const duration = record.duration_minutes || 0;
-        const hours = duration / 60;
+    // Recalculate
+    if (currentSalaryData) {
+        currentSalaryData.base_salary = baseSalary;
+        currentSalaryData.daily_wage = dailyWage;
+        currentSalaryData.hourly_rate = hourlyRate;
         
-        // PRESENT if checked in (don't wait for checkout)
-        if (record.check_in) {
-            if (duration >= 240) {
-                fullDays++;
-                totalHours += hours;
-            } else {
-                // If checked in but less than 4 hours = half day
-                halfDays++;
-                totalHours += hours;
-            }
-        } else {
-            // No check_in = ABSENT
-            absentDays++;
-        }
-    });
-    
-    // Count absents for days with no record (working days only)
-    const today = new Date();
-    const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
-    
-    for (let day = 1; day <= lastDay; day++) {
-        const date = new Date(year, month, day);
-        // Skip weekends
-        if (date.getDay() === 0 || date.getDay() === 6) continue;
+        const fullDayPay = currentSalaryData.full_days * dailyWage;
+        const halfDayPay = currentSalaryData.half_days * (dailyWage * 0.5);
+        currentSalaryData.earned_amount = Math.round(fullDayPay + halfDayPay);
         
-        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        
-        // If no record for this day, it's absent
-        if (!attendanceMap[dateKey]) {
-            // Only count as absent if it's in the past or today
-            if (date <= today) {
-                absentDays++;
-            }
-        }
-    }
-    
-    // Update stats
-    document.getElementById('stat-present').textContent = fullDays;
-    document.getElementById('stat-half').textContent = halfDays;
-    document.getElementById('stat-absent').textContent = absentDays;
-    
-    const avgHours = (fullDays + halfDays) > 0 ? (totalHours / (fullDays + halfDays)).toFixed(1) : 0;
-    document.getElementById('stat-hours').textContent = `${avgHours}h`;
-    
-    // Render calendar
-    renderMiniCalendar(year, month, attendanceMap);
-    
-    // Render timeline (last 5)
-    const recent = attendance?.slice(0, 5) || [];
-    document.getElementById('activity-timeline').innerHTML = recent.length ? recent.map(record => {
-        const date = new Date(record.date);
-        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        const checkIn = record.check_in ? new Date(record.check_in).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false}) : '--:--';
-        const checkOut = record.check_out ? new Date(record.check_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false}) : '--:--';
-        const duration = record.duration_minutes ? `${Math.floor(record.duration_minutes/60)}h ${record.duration_minutes%60}m` : (record.check_in ? 'Present' : '--');
-        const isCheckOut = record.check_out;
-        
-        return `
-            <div class="timeline-item">
-                <div class="timeline-icon ${isCheckOut ? 'checkout' : 'checkin'}">
-                    <i class="fas fa-${isCheckOut ? 'sign-out-alt' : 'sign-in-alt'}"></i>
-                </div>
-                <div class="timeline-content">
-                    <div class="timeline-date">${dateStr}</div>
-                    <div class="timeline-title">${isCheckOut ? 'Checked Out' : 'Checked In'} • ${duration}</div>
-                    <div class="timeline-meta">
-                        <span><i class="fas fa-arrow-right"></i> ${checkIn}</span>
-                        <span><i class="fas fa-arrow-left"></i> ${checkOut}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('') : '<div class="timeline-item"><div class="timeline-content"><div class="timeline-title">No activity this month</div></div></div>';
-}
-
-function renderMiniCalendar(year, month, attendanceMap) {
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const today = new Date();
-    const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
-    const todayKey = today.toISOString().split('T')[0];
-    
-    const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-    let html = weekdays.map(d => `<div class="cal-day-header">${d}</div>`).join('');
-    
-    // Empty cells
-    for (let i = 0; i < firstDay; i++) {
-        html += '<div class="cal-day empty"></div>';
-    }
-    
-    // Days - ALL days same rule: green if has check_in, red if not (no weekend exception)
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const record = attendanceMap[dateKey];
-        const isToday = isCurrentMonth && day === today.getDate();
-        const dateObj = new Date(year, month, day);
-        const isPastOrToday = dateObj <= today;
-        
-        let status = '';
-        let dot = '';
-        
-        // SAME RULE FOR ALL DAYS - NO WEEKEND EXCEPTION
-        if (record && record.check_in) {
-            // Has check_in = PRESENT (green)
-            const duration = record.duration_minutes || 0;
-            if (duration >= 240) {
-                status = 'present';
-                dot = '<div class="cal-dot present"></div>';
-            } else {
-                status = 'half';
-                dot = '<div class="cal-dot half"></div>';
-            }
-        } else if (isPastOrToday) {
-            // No record and past/today = ABSENT (red)
-            status = 'absent';
-            dot = '<div class="cal-dot absent"></div>';
-        }
-        // Future days stay neutral (no color)
-        
-        const todayClass = isToday ? 'today' : '';
-        
-        html += `
-            <div class="cal-day ${status} ${todayClass}" onclick="showDayDetail('${dateKey}')">
-                ${day}
-                ${dot}
-            </div>
-        `;
-    }
-    
-    document.getElementById('mini-calendar').innerHTML = html;
-}
-
-async function showDayDetail(dateKey) {
-    const emp = employees.find(e => e.id === currentEmpId);
-    if (!emp) return;
-    
-    const { data: records } = await supabase
-        .from('attendance')
-        .select('*')
-        .eq('employee_id', currentEmpId)
-        .eq('date', dateKey);
-    
-    const record = records?.[0];
-    selectedDateData = { date: dateKey, record, emp };
-    
-    const date = new Date(dateKey);
-    const dateStr = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    
-    // Create day modal if not exists
-    let dayModal = document.getElementById('day-detail-modal');
-    if (!dayModal) {
-        dayModal = document.createElement('div');
-        dayModal.id = 'day-detail-modal';
-        dayModal.className = 'day-modal';
-        dayModal.innerHTML = `
-            <div class="day-modal-content">
-                <div class="day-modal-header">
-                    <h3 id="day-modal-date">Date</h3>
-                    <button class="close-btn" onclick="closeDayModal()" style="position: static; background: var(--bg-secondary);">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div id="day-modal-body"></div>
-            </div>
-        `;
-        document.body.appendChild(dayModal);
-    }
-    
-    document.getElementById('day-modal-date').textContent = dateStr;
-    
-    let bodyHtml = '';
-    
-    // ALL DAYS SAME RULE - NO WEEKEND EXCEPTION
-    if (!record || !record.check_in) {
-        // ABSENT (red) - regardless of weekend
-        bodyHtml = `
-            <div class="selfie-container">
-                <div class="selfie-placeholder">
-                    <i class="fas fa-user-slash"></i>
-                    <p>No Check-in</p>
-                </div>
-            </div>
-            <div class="status-badge-large absent">
-                <i class="fas fa-times-circle"></i> ABSENT
-            </div>
-        `;
-    } else {
-        // PRESENT (has check_in)
-        const duration = record.duration_minutes || 0;
-        const status = duration >= 240 ? 'present' : 'half';
-        const statusText = duration >= 240 ? 'FULL DAY' : 'HALF DAY';
-        const statusIcon = duration >= 240 ? 'check-circle' : 'adjust';
-        const checkIn = new Date(record.check_in).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false});
-        const checkOut = record.check_out ? new Date(record.check_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false}) : 'Not checked out';
-        const durationText = record.duration_minutes ? `${Math.floor(record.duration_minutes/60)}h ${record.duration_minutes%60}m` : 'In Progress';
-        
-        // Selfie
-        bodyHtml += `
-            <div class="selfie-container">
-                ${record.selfie_url ? `<img src="${record.selfie_url}" alt="Selfie" onclick="window.open('${record.selfie_url}', '_blank')">` : `
-                    <div class="selfie-placeholder">
-                        <i class="fas fa-camera"></i>
-                        <p>No selfie available</p>
-                    </div>
-                `}
-            </div>
-        `;
-        
-        // Location
-        if (record.location_lat && record.location_lng) {
-            const mapsUrl = `https://www.google.com/maps?q=${record.location_lat},${record.location_lng}`;
-            bodyHtml += `
-                <div class="location-box">
-                    <div class="location-header">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <span>Location</span>
-                        <a href="${mapsUrl}" target="_blank" style="margin-left: auto; color: var(--accent-green);">
-                            <i class="fas fa-external-link-alt"></i>
-                        </a>
-                    </div>
-                    <div class="location-address" id="day-location-address">
-                        Lat: ${record.location_lat}, Lng: ${record.location_lng}
-                    </div>
-                </div>
-            `;
-            
-            // Try to get address
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${record.location_lat}&lon=${record.location_lng}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.display_name) {
-                        const addr = document.getElementById('day-location-address');
-                        if (addr) addr.textContent = data.display_name;
-                    }
-                })
-                .catch(() => {});
-        }
-        
-        // Time grid
-        bodyHtml += `
-            <div class="time-grid">
-                <div class="time-box">
-                    <label>Check In</label>
-                    <div class="time">${checkIn}</div>
-                </div>
-                <div class="time-box">
-                    <label>Check Out</label>
-                    <div class="time" style="${!record.check_out ? 'color: var(--text-secondary);' : ''}">${checkOut}</div>
-                </div>
-            </div>
-        `;
-        
-        // Duration
-        bodyHtml += `
-            <div class="duration-box">
-                <label>Total Duration</label>
-                <div class="duration">${durationText}</div>
-            </div>
-        `;
-        
-        // Status
-        bodyHtml += `
-            <div class="status-badge-large ${status}">
-                <i class="fas fa-${statusIcon}"></i> ${statusText}
-            </div>
-        `;
-    }
-    
-    document.getElementById('day-modal-body').innerHTML = bodyHtml;
-    dayModal.classList.add('show');
-}
-
-function closeDayModal() {
-    const dayModal = document.getElementById('day-detail-modal');
-    if (dayModal) {
-        dayModal.classList.remove('show');
+        calculateTotals();
     }
 }
 
-function changeModalMonth(direction) {
-    currentModalDate.setMonth(currentModalDate.getMonth() + direction);
-    loadModalData();
+function calculateTotals() {
+    if (!currentSalaryData) return;
+    
+    const bonus = parseFloat(document.getElementById('bonus-input').value) || 0;
+    const deductions = parseFloat(document.getElementById('deduction-input').value) || 0;
+    
+    currentSalaryData.bonus = bonus;
+    currentSalaryData.deductions = deductions;
+    
+    const fullPay = currentSalaryData.full_days * currentSalaryData.daily_wage;
+    const halfPay = currentSalaryData.half_days * (currentSalaryData.daily_wage * 0.5);
+    const overtimePay = currentSalaryData.overtime_hours * currentSalaryData.hourly_rate * 1.5;
+    
+    const earned = fullPay + halfPay + overtimePay;
+    const net = earned + bonus - currentSalaryData.advance_taken - deductions;
+    
+    currentSalaryData.earned_amount = Math.round(earned);
+    currentSalaryData.net_payable = Math.round(net);
+    
+    // Update display
+    document.getElementById('calc-full').textContent = `₹${formatNumber(Math.round(fullPay))}`;
+    document.getElementById('calc-half').textContent = `₹${formatNumber(Math.round(halfPay))}`;
+    document.getElementById('calc-overtime').textContent = `₹${formatNumber(Math.round(overtimePay))}`;
+    document.getElementById('calc-advance').textContent = `₹${formatNumber(currentSalaryData.advance_taken)}`;
+    document.getElementById('calc-net').textContent = `₹${formatNumber(currentSalaryData.net_payable)}`;
+}
+
+async function loadPaymentHistory(empId) {
+    try {
+        const { data } = await supabase
+            .from('salary_payments')
+            .select('*')
+            .eq('employee_id', empId)
+            .order('created_at', { ascending: false })
+            .limit(5);
+        
+        const list = document.getElementById('payment-history-list');
+        
+        if (!data || data.length === 0) {
+            list.innerHTML = '<div class="history-item"><span>No payment history</span></div>';
+            return;
+        }
+        
+        list.innerHTML = data.map(p => `
+            <div class="history-item">
+                <div class="history-info">
+                    <span class="history-date">${new Date(p.created_at).toLocaleDateString()}</span>
+                    <span class="history-type">${p.type === 'advance' ? 'Advance' : 'Salary Payment'}</span>
+                </div>
+                <span class="history-amount ${p.type === 'advance' ? 'negative' : ''}">
+                    ${p.type === 'advance' ? '-' : '+'}₹${formatNumber(p.amount)}
+                </span>
+            </div>
+        `).join('');
+    } catch (error) {
+        document.getElementById('payment-history-list').innerHTML = '<div class="history-item"><span>No payment history</span></div>';
+    }
+}
+
+function recordAdvance() {
+    document.getElementById('advance-amount').value = '';
+    document.getElementById('advance-reason').value = '';
+    document.getElementById('advance-modal').classList.add('show');
+}
+
+function closeAdvanceModal() {
+    document.getElementById('advance-modal').classList.remove('show');
+}
+
+async function saveAdvance() {
+    const amount = parseFloat(document.getElementById('advance-amount').value);
+    const reason = document.getElementById('advance-reason').value;
+    
+    if (!amount || amount <= 0) {
+        showToast('Please enter valid amount', 'error');
+        return;
+    }
+    
+    try {
+        // Save payment record
+        await supabase.from('salary_payments').insert([{
+            employee_id: currentEmpId,
+            amount: amount,
+            type: 'advance',
+            reason: reason,
+            month: currentSalaryData.month,
+            created_at: new Date().toISOString()
+        }]);
+        
+        // Update salary record
+        currentSalaryData.advance_taken += amount;
+        
+        await supabase.from('salaries').upsert([{
+            ...currentSalaryData,
+            updated_at: new Date().toISOString()
+        }]);
+        
+        calculateTotals();
+        closeAdvanceModal();
+        showToast('Advance recorded successfully', 'success');
+        loadData();
+    } catch (error) {
+        showToast('Failed to record advance', 'error');
+    }
+}
+
+async function processPayment() {
+    const remaining = currentSalaryData.net_payable - currentSalaryData.paid_amount;
+    
+    if (remaining <= 0) {
+        showToast('Already fully paid', 'success');
+        return;
+    }
+    
+    if (!confirm(`Process payment of ₹${formatNumber(remaining)}?`)) return;
+    
+    try {
+        // Save payment
+        await supabase.from('salary_payments').insert([{
+            employee_id: currentEmpId,
+            amount: remaining,
+            type: 'salary',
+            month: currentSalaryData.month,
+            created_at: new Date().toISOString()
+        }]);
+        
+        // Update salary
+        currentSalaryData.paid_amount += remaining;
+        currentSalaryData.status = 'paid';
+        currentSalaryData.paid_at = new Date().toISOString();
+        
+        await supabase.from('salaries').upsert([{
+            ...currentSalaryData,
+            updated_at: new Date().toISOString()
+        }]);
+        
+        showToast('Payment processed successfully', 'success');
+        closeModal();
+        loadData();
+    } catch (error) {
+        showToast('Failed to process payment', 'error');
+    }
 }
 
 function closeModal() {
-    document.getElementById('emp-modal').classList.remove('show');
+    document.getElementById('salary-modal').classList.remove('show');
     document.body.style.overflow = '';
     currentEmpId = null;
-    closeDayModal();
+    currentSalaryData = null;
 }
 
-function viewFullHistory() {
-    if (currentEmpId) {
-        localStorage.setItem('view_employee_id', currentEmpId);
-        window.location.href = `history.html?view=${currentEmpId}`;
+// Bulk Update
+function openBulkUpdate() {
+    document.getElementById('bulk-dept').value = 'all';
+    document.getElementById('bulk-salary').value = '';
+    document.getElementById('bulk-modal').classList.add('show');
+}
+
+function closeBulkModal() {
+    document.getElementById('bulk-modal').classList.remove('show');
+}
+
+async function applyBulkUpdate() {
+    const dept = document.getElementById('bulk-dept').value;
+    const salary = parseFloat(document.getElementById('bulk-salary').value);
+    
+    if (!salary || salary <= 0) {
+        showToast('Please enter valid salary', 'error');
+        return;
     }
-}
-
-async function deleteCurrentEmployee() {
-    if (!currentEmpId) return;
     
-    const emp = employees.find(e => e.id === currentEmpId);
-    const confirmMsg = `Delete ${emp?.name || 'this employee'} permanently?\n\nThis will remove all their attendance records too.`;
-    
-    if (!confirm(confirmMsg)) return;
+    const targets = dept === 'all' ? employees : employees.filter(e => e.department === dept);
     
     try {
-        await supabase.from('attendance').delete().eq('employee_id', currentEmpId);
-        const { error } = await supabase.from('employees').delete().eq('id', currentEmpId);
-        if (error) throw error;
+        for (const emp of targets) {
+            await supabase.from('employees').update({ base_salary: salary }).eq('id', emp.id);
+        }
         
-        employees = employees.filter(e => e.id !== currentEmpId);
-        document.getElementById('emp-count').textContent = employees.length;
-        updateOverviewStats();
-        renderEmployees();
-        closeModal();
-        showToast('Employee deleted successfully', 'success');
+        showToast(`Updated ${targets.length} employees`, 'success');
+        closeBulkModal();
+        loadData();
     } catch (error) {
-        showToast('Failed to delete employee: ' + error.message, 'error');
+        showToast('Failed to update', 'error');
     }
+}
+
+function exportSalaries() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth() + 1;
+    const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+    
+    let csv = 'Employee ID,Name,Department,Base Salary,Daily Wage,Full Days,Half Days,Absent,Overtime Hours,Earned,Bonus,Advance,Deductions,Net Payable,Paid,Status\n';
+    
+    salaries.forEach(sal => {
+        const emp = employees.find(e => e.id === sal.employee_id);
+        if (!emp) return;
+        
+        csv += `${emp.emp_id},${emp.name},${emp.department},${sal.base_salary},${sal.daily_wage},${sal.full_days},${sal.half_days},${sal.absent_days},${sal.overtime_hours},${sal.earned_amount},${sal.bonus},${sal.advance_taken},${sal.deductions},${sal.net_payable},${sal.paid_amount},${sal.status}\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `salaries_${monthKey}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 function showToast(message, type = 'success') {
@@ -549,7 +581,8 @@ function showToast(message, type = 'success') {
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-        closeDayModal();
+        closeAdvanceModal();
+        closeBulkModal();
         closeModal();
     }
 });
