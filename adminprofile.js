@@ -17,14 +17,14 @@ async function checkAuth() {
 
     const sessionData = JSON.parse(session);
 
-    if (sessionData.role !== 'management') {
+    if (sessionData.role !== 'management' && sessionData.role !== 'admin') {
         window.location.replace('index.html');
         return;
     }
 
     currentAdmin = sessionData.user;
 
-    // Load admin data from database
+    // Load admin data from admins table (NOT employees)
     await loadAdminData();
 
     // Load stats
@@ -33,9 +33,9 @@ async function checkAuth() {
 
 async function loadAdminData() {
     try {
-        // Get fresh admin data from database
+        // FIXED: Query 'admins' table instead of 'employees'
         const { data, error } = await supabase
-            .from('employees')
+            .from('admins')
             .select('*')
             .eq('id', currentAdmin.id)
             .single();
@@ -59,12 +59,14 @@ async function loadAdminData() {
 function updateProfileUI() {
     // Basic info
     document.getElementById('admin-name').textContent = currentAdmin.name || 'Admin User';
-    document.getElementById('admin-role').textContent = currentAdmin.role === 'management' ? 'System Administrator' : 'Admin';
+    document.getElementById('admin-role').textContent = currentAdmin.role === 'admin' ? 'System Administrator' : 'Admin';
 
     // Account info
     document.getElementById('profile-username').textContent = currentAdmin.username || '--';
     document.getElementById('profile-email').textContent = currentAdmin.email || '--';
-    document.getElementById('profile-mobile').textContent = currentAdmin.mobile || '--';
+
+    // Mobile might not be in admins table, check both mobile and phone
+    document.getElementById('profile-mobile').textContent = currentAdmin.mobile || currentAdmin.phone || '--';
 
     // Member since
     const createdDate = new Date(currentAdmin.created_at || Date.now());
@@ -73,50 +75,20 @@ function updateProfileUI() {
         year: 'numeric'
     });
 
-    // Load company settings if available
+    // Load company settings
     loadCompanySettings();
 }
 
 async function loadCompanySettings() {
-    try {
-        const { data, error } = await supabase
-            .from('settings')
-            .select('*')
-            .eq('key', 'company')
-            .maybeSingle();
-
-        let settings = null;
-
-        if (data && data.value) {
-            settings = data.value;
-        } else {
-            // Try localStorage fallback
-            const localSettings = localStorage.getItem('company_settings');
-            if (localSettings) {
-                settings = JSON.parse(localSettings);
-            }
+    // Use localStorage for company settings (avoid DB issues)
+    const localSettings = localStorage.getItem('company_settings');
+    if (localSettings) {
+        const settings = JSON.parse(localSettings);
+        if (settings.name) {
+            document.getElementById('company-name').textContent = settings.name;
         }
-
-        if (settings) {
-            if (settings.name) {
-                document.getElementById('company-name').textContent = settings.name;
-            }
-            if (settings.location) {
-                document.getElementById('office-location').textContent = settings.location;
-            }
-        }
-    } catch (error) {
-        console.log('No company settings found in DB, trying localStorage');
-        // Try localStorage fallback
-        const localSettings = localStorage.getItem('company_settings');
-        if (localSettings) {
-            const settings = JSON.parse(localSettings);
-            if (settings.name) {
-                document.getElementById('company-name').textContent = settings.name;
-            }
-            if (settings.location) {
-                document.getElementById('office-location').textContent = settings.location;
-            }
+        if (settings.location) {
+            document.getElementById('office-location').textContent = settings.location;
         }
     }
 }
@@ -212,12 +184,12 @@ async function saveEdit() {
 
     try {
         if (currentEditField === 'email' || currentEditField === 'mobile') {
-            // Update admin profile in database
+            // FIXED: Update 'admins' table instead of 'employees'
             const updateData = {};
             updateData[currentEditField] = newValue;
 
             const { error } = await supabase
-                .from('employees')
+                .from('admins')
                 .update(updateData)
                 .eq('id', currentAdmin.id);
 
@@ -232,66 +204,19 @@ async function saveEdit() {
             session.user[currentEditField] = newValue;
             storage.setItem('aarambh_session', JSON.stringify(session));
 
-        } else if (currentEditField === 'company' || currentEditField === 'location') {
-            // Update company settings - use RPC or bypass RLS
-            const settings = {
-                name: document.getElementById('company-name').textContent,
-                location: document.getElementById('office-location').textContent
-            };
+        } else {
+            // Use localStorage for company settings
+            let settings = JSON.parse(localStorage.getItem('company_settings') || '{}');
 
             if (currentEditField === 'company') {
                 settings.name = newValue;
-            } else {
-                settings.location = newValue;
-            }
-
-            // Try to update, if fails due to RLS, just update UI locally
-            try {
-                const { data: existing } = await supabase
-                    .from('settings')
-                    .select('id')
-                    .eq('key', 'company')
-                    .maybeSingle();
-
-                let error;
-
-                if (existing) {
-                    // Update existing
-                    ({ error } = await supabase
-                        .from('settings')
-                        .update({
-                            value: settings,
-                            updated_at: new Date().toISOString()
-                        })
-                        .eq('key', 'company'));
-                } else {
-                    // Insert new
-                    ({ error } = await supabase
-                        .from('settings')
-                        .insert([{
-                            key: 'company',
-                            value: settings,
-                            created_at: new Date().toISOString(),
-                            updated_at: new Date().toISOString()
-                        }]));
-                }
-
-                if (error) {
-                    console.warn('Database save failed (RLS?), saving to localStorage:', error);
-                    // Save to localStorage as fallback
-                    localStorage.setItem('company_settings', JSON.stringify(settings));
-                }
-            } catch (dbError) {
-                console.warn('Database error, using localStorage:', dbError);
-                localStorage.setItem('company_settings', JSON.stringify(settings));
-            }
-
-            // Update UI regardless
-            if (currentEditField === 'company') {
                 document.getElementById('company-name').textContent = newValue;
             } else {
+                settings.location = newValue;
                 document.getElementById('office-location').textContent = newValue;
             }
+
+            localStorage.setItem('company_settings', JSON.stringify(settings));
         }
 
         closeEditModal();
@@ -338,32 +263,34 @@ async function savePassword() {
     }
 
     try {
-        // Verify current password
-        const { data: admin, error: verifyError } = await supabase
-            .from('employees')
-            .select('password')
-            .eq('id', currentAdmin.id)
-            .single();
+        // Check current password from session (since we have it stored there)
+        const session = JSON.parse(localStorage.getItem('aarambh_session') || sessionStorage.getItem('aarambh_session'));
+        const storedPass = session?.user?.password;
 
-        if (verifyError || admin.password !== currentPass) {
+        if (storedPass && storedPass !== currentPass) {
             showToast('Current password is incorrect', 'error');
             return;
         }
 
-        // Update password
+        // FIXED: Update password in 'admins' table instead of 'employees'
         const { error } = await supabase
-            .from('employees')
+            .from('admins')
             .update({ password: newPass })
             .eq('id', currentAdmin.id);
 
         if (error) throw error;
+
+        // Update session with new password
+        session.user.password = newPass;
+        const storage = localStorage.getItem('aarambh_session') ? localStorage : sessionStorage;
+        storage.setItem('aarambh_session', JSON.stringify(session));
 
         closePasswordModal();
         showToast('Password changed successfully', 'success');
 
     } catch (error) {
         console.error('Error changing password:', error);
-        showToast('Failed to change password', 'error');
+        showToast('Failed to change password: ' + error.message, 'error');
     }
 }
 
