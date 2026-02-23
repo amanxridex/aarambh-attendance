@@ -22,31 +22,63 @@
                 </div>
             </div>
             <div class="header-actions">
-                <button class="icon-btn" onclick="logout()">
+                <button class="icon-btn profile-btn" onclick="window.location.href='adminprofile.html'">
+                    <i class="fas fa-user-shield"></i>
+                </button>
+                <button class="icon-btn logout-btn" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i>
                 </button>
             </div>
         </header>
 
+        <!-- Admin Mini Profile -->
+        <div class="admin-mini-profile" onclick="window.location.href='adminprofile.html'">
+            <div class="admin-avatar">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="admin-info">
+                <span class="admin-name" id="admin-name">Loading...</span>
+                <span class="admin-role">System Administrator</span>
+            </div>
+            <i class="fas fa-chevron-right admin-arrow"></i>
+        </div>
+
         <!-- Stats Overview -->
         <div class="stats-bar">
             <div class="stat-item">
-                <span class="stat-number" id="total-employees">0</span>
-                <span class="stat-label">Total Employees</span>
+                <div class="stat-icon total">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-data">
+                    <span class="stat-number" id="total-employees">0</span>
+                    <span class="stat-label">Total Employees</span>
+                </div>
             </div>
-            <div class="stat-divider"></div>
             <div class="stat-item">
-                <span class="stat-number present" id="present-today">0</span>
-                <span class="stat-label">Present Today</span>
+                <div class="stat-icon present">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-data">
+                    <span class="stat-number present" id="present-today">0</span>
+                    <span class="stat-label">Present Today</span>
+                </div>
             </div>
-            <div class="stat-divider"></div>
             <div class="stat-item">
-                <span class="stat-number absent" id="absent-today">0</span>
-                <span class="stat-label">Absent Today</span>
+                <div class="stat-icon absent">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div class="stat-data">
+                    <span class="stat-number absent" id="absent-today">0</span>
+                    <span class="stat-label">Absent Today</span>
+                </div>
             </div>
         </div>
 
-        <!-- Main Action Cards -->
+        <!-- Quick Actions Grid -->
+        <div class="section-title">
+            <span>Quick Actions</span>
+        </div>
+
         <div class="dashboard-grid">
             <!-- Create Employee Card -->
             <div class="dashboard-card create-card" onclick="openCreateEmployee()">
@@ -66,22 +98,71 @@
             </div>
 
             <!-- View Employees Card -->
-            <div class="dashboard-card attendance-card" 
-            onclick="window.location.href='employees.html'">
+            <div class="dashboard-card view-card" onclick="window.location.href='employees.html'">
                 <div class="card-glow"></div>
-                <div class="card-content"></div>
-                     <div class="card-icon">
-                         <i class="fas fa-users"></i>
-                     </div>
-                     <div class="card-info">
-                         <h2>View Employees</h2>
-                         <p>Manage all employees</p>
-                     </div>
-                     <div class="card-arrow">
-                         <i class="fas fa-arrow-right"></i>
-                     </div>
-                 </div>
-             </div>
+                <div class="card-content">
+                    <div class="card-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="card-info">
+                        <h2>View Employees</h2>
+                        <p>Manage all employees</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Salaries Card -->
+            <div class="dashboard-card salary-card" onclick="window.location.href='salaries.html'">
+                <div class="card-glow"></div>
+                <div class="card-content">
+                    <div class="card-icon">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <div class="card-info">
+                        <h2>Salaries</h2>
+                        <p>Payroll & Payments</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Reports Card -->
+            <div class="dashboard-card report-card" onclick="window.location.href='reports.html'">
+                <div class="card-glow"></div>
+                <div class="card-content">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="card-info">
+                        <h2>Reports</h2>
+                        <p>Analytics & Insights</p>
+                    </div>
+                    <div class="card-arrow">
+                        <i class="fas fa-arrow-right"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="section-title">
+            <span>Today's Activity</span>
+            <a href="#" class="view-all">View All</a>
+        </div>
+
+        <div class="activity-list" id="recent-activity">
+            <div class="activity-item skeleton">
+                <div class="activity-icon"></div>
+                <div class="activity-content">
+                    <div class="activity-line"></div>
+                    <div class="activity-line short"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -144,6 +225,17 @@
                         <input type="text" id="emp-designation" placeholder="Software Engineer" required>
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Base Salary (Monthly) *</label>
+                        <input type="number" id="emp-salary" placeholder="50000" required>
+                        <small class="help-text">Used for automatic salary calculation</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Joining Date</label>
+                        <input type="date" id="emp-joining" value="">
+                    </div>
+                </div>
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" onclick="closeCreateModal()">Cancel</button>
                     <button type="submit" class="btn-primary" id="create-emp-btn">
@@ -152,36 +244,6 @@
                     </button>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <!-- View Employees Modal -->
-    <div class="modal" id="view-modal">
-        <div class="modal-overlay" onclick="closeViewModal()"></div>
-        <div class="modal-content wide">
-            <div class="modal-header">
-                <h2>All Employees</h2>
-                <button class="close-btn" onclick="closeViewModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="employees-table-container">
-                <table class="attendance-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Username</th>
-                            <th>Emp ID</th>
-                            <th>Department</th>
-                            <th>Designation</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="employees-tbody">
-                        <tr><td colspan="6" class="text-center">Loading...</td></tr>
-                    </tbody>
-                </table>
-            </div>
         </div>
     </div>
 
