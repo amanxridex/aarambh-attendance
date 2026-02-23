@@ -30,8 +30,8 @@
         <!-- Date Range Filter -->
         <div class="filter-section">
             <div class="date-selector">
-                <button class="date-tab active" onclick="setDateRange('week')">Last 7 Days</button>
-                <button class="date-tab" onclick="setDateRange('month')">This Month</button>
+                <button class="date-tab active" onclick="setDateRange('week', event)">Last 7 Days</button>
+                <button class="date-tab" onclick="setDateRange('month', event)">This Month</button>
                 <button class="date-tab" onclick="openCustomDateModal()">Custom</button>
             </div>
             <div class="current-range" id="current-range-display">

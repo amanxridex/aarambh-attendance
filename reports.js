@@ -182,9 +182,17 @@ function processAnalytics() {
 }
 
 // ==== HTML Handlers & Date Ranges ==== 
-function setDateRange(rangeType) {
+function setDateRange(rangeType, evt) {
     document.querySelectorAll('.date-tab').forEach(t => t.classList.remove('active'));
-    event.target.classList.add('active');
+
+    if (evt && evt.target) {
+        evt.target.classList.add('active');
+    } else {
+        // Fallback for programmatic calls
+        const tabs = document.querySelectorAll('.date-tab');
+        if (rangeType === 'week' && tabs.length > 0) tabs[0].classList.add('active');
+        else if (rangeType === 'month' && tabs.length > 1) tabs[1].classList.add('active');
+    }
 
     const today = new Date();
     dateEndStr = today.toISOString().split('T')[0];
