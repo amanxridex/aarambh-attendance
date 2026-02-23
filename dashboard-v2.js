@@ -12,12 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
 async function checkAuth() {
     const session = localStorage.getItem('aarambh_session') || sessionStorage.getItem('aarambh_session');
     if (!session) {
-        window.location.href = 'auth.html';
+        window.location.replace('auth.html');
         return;
     }
     const data = JSON.parse(session);
     if (data.role !== 'management') {
-        window.location.href = 'index.html';
+        window.location.replace('index.html');
     }
 }
 
@@ -27,7 +27,7 @@ async function loadEmployees() {
             .from('employees')
             .select('*')
             .order('created_at', { ascending: false });
-        
+
         if (error) throw error;
         employees = data || [];
         document.getElementById('total-employees').textContent = employees.length;
@@ -43,11 +43,11 @@ async function loadTodayAttendance() {
             .from('attendance')
             .select('*')
             .eq('date', today);
-        
+
         if (error) throw error;
         todayAttendance = {};
         data?.forEach(record => { todayAttendance[record.employee_id] = record; });
-        
+
         const present = Object.values(todayAttendance).filter(a => a.status === 'present').length;
         const absent = Object.values(todayAttendance).filter(a => a.status === 'absent').length;
         document.getElementById('present-today').textContent = present;
@@ -101,7 +101,7 @@ async function saveEmployee(event) {
     event.preventDefault();
     const btn = document.getElementById('create-emp-btn');
     btn.disabled = true;
-    
+
     try {
         const employeeData = {
             name: document.getElementById('emp-name').value.trim(),
@@ -114,38 +114,38 @@ async function saveEmployee(event) {
             designation: document.getElementById('emp-designation').value.trim(),
             created_at: new Date().toISOString()
         };
-        
+
         if (employeeData.password.length < 6) {
             throw new Error('Password must be at least 6 characters');
         }
-        
+
         const { data: existing } = await supabase
             .from('employees')
             .select('username')
             .eq('username', employeeData.username)
             .maybeSingle();
         if (existing) throw new Error('Username already exists');
-        
+
         const { data: existingId } = await supabase
             .from('employees')
             .select('emp_id')
             .eq('emp_id', employeeData.emp_id)
             .maybeSingle();
         if (existingId) throw new Error('Employee ID already exists');
-        
+
         const { data, error } = await supabase
             .from('employees')
             .insert([employeeData])
             .select()
             .single();
-        
+
         if (error) throw error;
-        
+
         employees.unshift(data);
         document.getElementById('total-employees').textContent = employees.length;
         closeCreateModal();
         showToast(`Created! Username: ${data.username}, Password: ${employeeData.password}`, 'success');
-        
+
     } catch (error) {
         showToast(error.message || 'Failed to create employee', 'error');
     } finally {
@@ -178,7 +178,7 @@ function showToast(message, type = 'success') {
 function logout() {
     localStorage.removeItem('aarambh_session');
     sessionStorage.removeItem('aarambh_session');
-    window.location.href = 'auth.html';
+    window.location.replace('auth.html');
 }
 
 document.addEventListener('keydown', (e) => {
