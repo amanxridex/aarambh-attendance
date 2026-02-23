@@ -528,3 +528,67 @@ body {
 .loading {
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Profile Photo Upload Styles */
+.profile-avatar-large {
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.profile-avatar-large img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 30px;
+}
+
+.photo-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 30px;
+    color: white;
+    font-size: 12px;
+    gap: 5px;
+    z-index: 2;
+}
+
+.photo-overlay i {
+    font-size: 24px;
+    color: white;
+}
+
+.profile-avatar-large:hover .photo-overlay {
+    opacity: 1;
+}
+
+/* Loading spinner for photo upload */
+.photo-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: var(--accent-green);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 3;
+}
+
+@keyframes spin {
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
