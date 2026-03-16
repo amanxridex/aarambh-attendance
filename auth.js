@@ -14,6 +14,7 @@ window.onload = function () {
     }
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     initApp();
+    initPWA();
 };
 
 function initApp() {
@@ -183,4 +184,70 @@ async function logout() {
     localStorage.removeItem('aarambh_session');
     sessionStorage.removeItem('aarambh_session');
     window.location.replace('auth.html');
+}
+
+// PWA Install Logic
+let deferredPrompt;
+
+function initPWA() {
+    // Inject PWA Popup HTML
+    const pwaHTML = `
+        <div id="pwa-popup" class="pwa-popup">
+            <img src="assets/aarambh.ico" alt="App Icon" class="pwa-icon">
+            <div class="pwa-content">
+                <h4>Install Aarambh</h4>
+                <p id="pwa-message">Install our app for a better full-screen experience.</p>
+            </div>
+            <div class="pwa-actions">
+                <button id="pwa-install-btn" class="pwa-btn pwa-install-btn">Install</button>
+                <button id="pwa-close-btn" class="pwa-btn pwa-close-btn">Not Now</button>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', pwaHTML);
+
+    const pwaPopup = document.getElementById('pwa-popup');
+    const installBtn = document.getElementById('pwa-install-btn');
+    const closeBtn = document.getElementById('pwa-close-btn');
+    const pwaMessage = document.getElementById('pwa-message');
+
+    // Detect iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches;
+
+    // Show popup
+    function showPopup() {
+        if (!isStandalone) {
+            setTimeout(() => {
+                pwaPopup.classList.add('show');
+            }, 3000); // show 3 seconds after load
+        }
+    }
+
+    if (isIOS && !isStandalone) {
+        installBtn.style.display = 'none';
+        pwaMessage.innerHTML = 'To install, tap <strong>Share</strong> <i class="fas fa-share-square"></i><br> then <strong>Add to Home Screen</strong> <i class="fas fa-plus-square"></i>';
+        showPopup();
+    } else {
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            showPopup();
+        });
+    }
+
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                pwaPopup.classList.remove('show');
+            }
+            deferredPrompt = null;
+        }
+    });
+
+    closeBtn.addEventListener('click', () => {
+        pwaPopup.classList.remove('show');
+    });
 }
