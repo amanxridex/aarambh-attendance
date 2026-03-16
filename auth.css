@@ -206,12 +206,12 @@ body {
     transform: translateX(-12px);
 }
 
-.toggle-switch input:checked + .toggle-slider {
+.toggle-switch input:checked+.toggle-slider {
     background: var(--accent-blue);
     border-color: var(--accent-blue);
 }
 
-.toggle-switch input:checked + .toggle-slider i {
+.toggle-switch input:checked+.toggle-slider i {
     color: white;
     transform: translateX(12px);
 }
@@ -228,7 +228,7 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-.toggle-switch input:checked + .toggle-slider::before {
+.toggle-switch input:checked+.toggle-slider::before {
     transform: translateX(28px);
     background: white;
 }
@@ -318,11 +318,11 @@ body {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.input-wrapper input:focus + .input-icon {
+.input-wrapper input:focus+.input-icon {
     color: var(--accent-green);
 }
 
-.mode-management .input-wrapper input:focus + .input-icon {
+.mode-management .input-wrapper input:focus+.input-icon {
     color: var(--accent-blue);
 }
 
@@ -391,17 +391,17 @@ body {
     transition: all 0.2s ease;
 }
 
-.remember-me input:checked ~ .checkmark {
+.remember-me input:checked~.checkmark {
     background: var(--accent-green);
     border-color: var(--accent-green);
 }
 
-.mode-management .remember-me input:checked ~ .checkmark {
+.mode-management .remember-me input:checked~.checkmark {
     background: var(--accent-blue);
     border-color: var(--accent-blue);
 }
 
-.remember-me input:checked ~ .checkmark::after {
+.remember-me input:checked~.checkmark::after {
     opacity: 1;
     transform: scale(1);
 }
@@ -502,69 +502,76 @@ body {
     transform: translateX(4px);
 }
 
-/* Demo Credentials */
-.demo-credentials {
+/* PWA Inline Install */
+.pwa-inline-container {
     margin-top: 24px;
     padding-top: 24px;
     border-top: 1px solid var(--border-color);
-}
-
-.demo-header {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: space-between;
+    gap: 16px;
+    animation: fadeInUp 0.5s ease;
+}
+
+.pwa-inline-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.pwa-inline-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 208, 132, 0.2);
+}
+
+.pwa-inline-text {
+    flex: 1;
+}
+
+.pwa-inline-text h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.pwa-inline-text p {
     font-size: 12px;
     color: var(--text-secondary);
-    margin-bottom: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    line-height: 1.3;
 }
 
-.demo-header i {
-    color: var(--accent-green);
-}
-
-.mode-management .demo-header i {
-    color: var(--accent-blue);
-}
-
-.demo-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.demo-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    font-size: 13px;
-}
-
-.demo-user {
-    font-family: 'Courier New', monospace;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.demo-type {
-    font-size: 11px;
-    padding: 4px 10px;
-    border-radius: 20px;
+.pwa-inline-btn {
+    padding: 10px 16px;
     background: rgba(0, 208, 132, 0.15);
+    border: 1px solid rgba(0, 208, 132, 0.3);
+    border-radius: 10px;
     color: var(--accent-green);
-    font-weight: 600;
-    text-transform: uppercase;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
 }
 
-.mode-management .demo-type {
+.mode-management .pwa-inline-btn {
     background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3);
     color: var(--accent-blue);
+}
+
+.pwa-inline-btn:hover {
+    background: var(--accent-green);
+    color: var(--bg-primary);
+}
+
+.mode-management .pwa-inline-btn:hover {
+    background: var(--accent-blue);
+    color: var(--bg-primary);
 }
 
 /* Toast Notifications */
@@ -622,6 +629,7 @@ body {
         opacity: 0;
         transform: translateY(-30px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -633,6 +641,7 @@ body {
         opacity: 0;
         transform: translateY(30px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -640,9 +649,12 @@ body {
 }
 
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         box-shadow: 0 10px 40px rgba(0, 208, 132, 0.3);
     }
+
     50% {
         box-shadow: 0 10px 60px rgba(0, 208, 132, 0.5);
     }
@@ -656,9 +668,26 @@ body {
 
 /* Shake Animation for Error */
 @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-    20%, 40%, 60%, 80% { transform: translateX(5px); }
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-5px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(5px);
+    }
 }
 
 .shake {
@@ -670,27 +699,27 @@ body {
     .app-container {
         padding: 24px 20px;
     }
-    
+
     .auth-card {
         padding: 24px;
         border-radius: 24px;
     }
-    
+
     .logo-icon {
         width: 64px;
         height: 64px;
         font-size: 28px;
     }
-    
+
     .logo-text {
         font-size: 24px;
     }
-    
+
     .login-mode-toggle {
         padding: 12px;
         gap: 12px;
     }
-    
+
     .toggle-label {
         font-size: 12px;
     }
