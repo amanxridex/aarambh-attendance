@@ -191,14 +191,15 @@ let deferredPrompt;
 
 function initPWA() {
     const pwaPopup = document.getElementById('pwa-popup');
-    const installBtn = document.getElementById('pwa-install-btn');
-    const pwaMessage = document.getElementById('pwa-message');
+    const androidBtn = document.getElementById('pwa-install-android');
+    const iosBtn = document.getElementById('pwa-install-ios');
 
     if (!pwaPopup) return;
 
-    // Detect iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    // Detect environment
     const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isAndroid = /Android/.test(navigator.userAgent);
 
     if (isStandalone) {
         pwaPopup.style.display = 'none';
@@ -207,18 +208,18 @@ function initPWA() {
         pwaPopup.style.display = 'flex';
     }
 
-    if (isIOS) {
-        if (installBtn) installBtn.style.display = 'none';
-        pwaMessage.innerHTML = 'To install, tap <strong>Share</strong> <i class="fas fa-share-square"></i><br> then <strong>Add to Home Screen</strong> <i class="fas fa-plus-square"></i>';
-    } else {
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-        });
-    }
+    // Capture prompt on Android/Desktop
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+    });
 
-    if (installBtn) {
-        installBtn.addEventListener('click', async () => {
+    if (androidBtn) {
+        androidBtn.addEventListener('click', async () => {
+            if (isIOS) {
+                showToast('You are on an iOS device. Please use the iOS button.');
+                return;
+            }
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
@@ -227,8 +228,18 @@ function initPWA() {
                 }
                 deferredPrompt = null;
             } else {
-                showToast('Use your browser menu -> "Add to Home Screen" to install.');
+                showToast('Click three dots (⋮) in your browser -> "Install App".');
             }
+        });
+    }
+
+    if (iosBtn) {
+        iosBtn.addEventListener('click', () => {
+            if (isAndroid) {
+                showToast('You are on Android. Please use the Android button.');
+                return;
+            }
+            showToast('Tap the Share icon (box with up arrow), then "Add to Home Screen".');
         });
     }
 }

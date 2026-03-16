@@ -545,6 +545,12 @@ body {
     line-height: 1.3;
 }
 
+.pwa-action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+
 .pwa-inline-btn {
     padding: 10px 16px;
     background: rgba(0, 208, 132, 0.15);
@@ -556,6 +562,16 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.pwa-inline-btn.ios-btn {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
+    color: var(--accent-purple);
 }
 
 .mode-management .pwa-inline-btn {
@@ -564,9 +580,20 @@ body {
     color: var(--accent-blue);
 }
 
+.mode-management .pwa-inline-btn.ios-btn {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.3);
+    color: var(--accent-purple);
+}
+
 .pwa-inline-btn:hover {
     background: var(--accent-green);
     color: var(--bg-primary);
+}
+
+.pwa-inline-btn.ios-btn:hover {
+    background: var(--accent-purple);
+    color: var(--text-primary);
 }
 
 .mode-management .pwa-inline-btn:hover {

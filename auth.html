@@ -108,30 +108,36 @@
                         <p id="pwa-message">Install our app for a better full-screen experience.</p>
                     </div>
                 </div>
-                <button id="pwa-install-btn" class="pwa-inline-btn">Install</button>
+                <div class="pwa-action-buttons">
+                    <button id="pwa-install-android" class="pwa-inline-btn" aria-label="Install for Android">
+                        <i class="fab fa-android"></i> Android
+                    </button>
+                    <button id="pwa-install-ios" class="pwa-inline-btn ios-btn" aria-label="Install for iOS">
+                        <i class="fab fa-apple"></i> iOS
+                    </button>
+                </div>
+            </div>
+
+            <!-- Toast Notification -->
+            <div id="toast" class="toast">
+                <div class="toast-content">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="toast-message">Login successful!</span>
+                </div>
+            </div>
+
+            <!-- Error Toast -->
+            <div id="error-toast" class="toast error">
+                <div class="toast-content">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span id="error-message">Invalid credentials</span>
+                </div>
             </div>
         </div>
 
-        <!-- Toast Notification -->
-        <div id="toast" class="toast">
-            <div class="toast-content">
-                <i class="fas fa-check-circle"></i>
-                <span id="toast-message">Login successful!</span>
-            </div>
-        </div>
-
-        <!-- Error Toast -->
-        <div id="error-toast" class="toast error">
-            <div class="toast-content">
-                <i class="fas fa-exclamation-circle"></i>
-                <span id="error-message">Invalid credentials</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Supabase SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
-    <script src="auth.js"></script>
+        <!-- Supabase SDK -->
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+        <script src="auth.js"></script>
 </body>
 
 </html>
