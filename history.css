@@ -29,7 +29,8 @@ body {
     max-width: 480px;
     margin: 0 auto;
     min-height: 100vh;
-    padding: 20px;
+    padding: 16px;
+    padding-bottom: 80px;
 }
 
 /* Header */
@@ -375,15 +376,15 @@ body {
     .app-container {
         padding: 16px;
     }
-    
+
     .dates-grid {
         gap: 6px;
     }
-    
+
     .date-number {
         font-size: 14px;
     }
-    
+
     .time-stamps {
         grid-template-columns: 1fr;
     }
@@ -443,4 +444,3 @@ body {
     font-weight: 600;
     color: var(--accent-red);
 }
-

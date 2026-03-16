@@ -33,8 +33,8 @@ body {
     max-width: 480px;
     margin: 0 auto;
     min-height: 100vh;
-    padding: 20px;
-    padding-bottom: 100px;
+    padding: 16px;
+    padding-bottom: 80px;
 }
 
 /* Header */
@@ -161,8 +161,8 @@ body {
 
 /* Overview Cards */
 .overview-cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 12px;
     margin-bottom: 20px;
 }
@@ -233,7 +233,9 @@ body {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Employee Cards */
@@ -587,8 +589,8 @@ body {
 
 /* Stats Grid */
 .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 12px;
     padding: 0 24px;
     margin-bottom: 24px;
@@ -753,9 +755,17 @@ body {
     margin-top: 4px;
 }
 
-.cal-dot.present { background: var(--accent-green); }
-.cal-dot.half { background: var(--accent-orange); }
-.cal-dot.absent { background: var(--accent-red); }
+.cal-dot.present {
+    background: var(--accent-green);
+}
+
+.cal-dot.half {
+    background: var(--accent-orange);
+}
+
+.cal-dot.absent {
+    background: var(--accent-red);
+}
 
 /* Activity Timeline */
 .activity-section {

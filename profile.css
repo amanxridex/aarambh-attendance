@@ -29,7 +29,8 @@ body {
     max-width: 480px;
     margin: 0 auto;
     min-height: 100vh;
-    padding: 20px;
+    padding: 16px;
+    padding-bottom: 80px;
 }
 
 /* Header */
@@ -429,16 +430,16 @@ body {
     .app-container {
         padding: 16px;
     }
-    
+
     .profile-card {
         padding: 24px 20px;
     }
-    
+
     .image-container {
         width: 100px;
         height: 100px;
     }
-    
+
     .profile-name {
         font-size: 20px;
     }

@@ -30,8 +30,8 @@ body {
     max-width: 480px;
     margin: 0 auto;
     min-height: 100vh;
-    padding: 20px;
-    padding-bottom: 100px;
+    padding: 16px;
+    padding-bottom: 80px;
 }
 
 /* Header */
@@ -69,6 +69,7 @@ body {
     background: linear-gradient(135deg, #00d084 0%, #00a8e8 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .header-actions {
@@ -155,8 +156,8 @@ body {
 
 /* Stats Row */
 .stats-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 12px;
     margin-bottom: 20px;
 }
@@ -277,7 +278,9 @@ body {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Salary Cards */
@@ -389,8 +392,8 @@ body {
 }
 
 .salary-amounts {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 12px;
     margin-bottom: 16px;
 }
@@ -610,8 +613,8 @@ body {
 
 /* Attendance Cards */
 .attendance-cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 12px;
 }
 

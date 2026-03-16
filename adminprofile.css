@@ -30,8 +30,8 @@ body {
     max-width: 480px;
     margin: 0 auto;
     min-height: 100vh;
-    padding: 20px;
-    padding-bottom: 100px;
+    padding: 16px;
+    padding-bottom: 80px;
 }
 
 /* Header */
@@ -155,8 +155,8 @@ body {
 
 /* Stats Grid */
 .stats-grid-profile {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 16px;
     margin-bottom: 24px;
 }
