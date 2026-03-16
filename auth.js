@@ -200,24 +200,20 @@ function initPWA() {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches;
 
-    // Show popup
-    function showPopup() {
-        if (!isStandalone) {
-            setTimeout(() => {
-                pwaPopup.style.display = 'flex';
-            }, 1000); // show slightly after load
-        }
+    if (isStandalone) {
+        pwaPopup.style.display = 'none';
+        return;
+    } else {
+        pwaPopup.style.display = 'flex';
     }
 
-    if (isIOS && !isStandalone) {
+    if (isIOS) {
         if (installBtn) installBtn.style.display = 'none';
         pwaMessage.innerHTML = 'To install, tap <strong>Share</strong> <i class="fas fa-share-square"></i><br> then <strong>Add to Home Screen</strong> <i class="fas fa-plus-square"></i>';
-        showPopup();
     } else {
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            showPopup();
         });
     }
 
@@ -230,6 +226,8 @@ function initPWA() {
                     pwaPopup.style.display = 'none';
                 }
                 deferredPrompt = null;
+            } else {
+                showToast('Use your browser menu -> "Add to Home Screen" to install.');
             }
         });
     }
