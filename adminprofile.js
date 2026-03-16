@@ -33,7 +33,7 @@ async function checkAuth() {
 
 async function loadAdminData() {
     try {
-        // FIXED: Query 'admins' table instead of 'employees'
+        // Get fresh admin data from admins table
         const { data, error } = await supabase
             .from('admins')
             .select('*')
@@ -49,14 +49,28 @@ async function loadAdminData() {
         // Update UI
         updateProfileUI();
 
+        // Load photo
+        await loadAdminPhoto();
+
     } catch (error) {
         console.error('Error loading admin data:', error);
-        // Use session data as fallback
         updateProfileUI();
     }
 }
 
 function updateProfileUI() {
+    // Admin Photo
+    const photoImg = document.getElementById('admin-photo');
+    const photoIcon = document.getElementById('admin-photo-icon');
+    if (photoImg && currentAdmin.profile_image) {
+        photoImg.src = currentAdmin.profile_image;
+        photoImg.style.display = 'block';
+        if (photoIcon) photoIcon.style.display = 'none';
+    } else if (photoImg) {
+        photoImg.style.display = 'none';
+        if (photoIcon) photoIcon.style.display = 'block';
+    }
+
     // Basic info
     document.getElementById('admin-name').textContent = currentAdmin.name || 'Admin User';
     document.getElementById('admin-role').textContent = currentAdmin.role === 'admin' ? 'System Administrator' : 'Admin';
@@ -331,10 +345,198 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
+// Photo upload functions
+function selectPhoto() {
+    document.getElementById('photo-input').click();
+}
+
+// Handle file selection
+document.getElementById('photo-input').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        showToast('Please select a valid image (JPG, PNG, or WebP)', 'error');
+        return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        showToast('Image size must be less than 5MB', 'error');
+        return;
+    }
+
+    await uploadPhoto(file);
+});
+
+async function uploadPhoto(file) {
+    const avatarContainer = document.querySelector('.profile-avatar-large');
+
+    // Show loading
+    const loading = document.createElement('div');
+    loading.className = 'photo-loading';
+    loading.style.display = 'block';
+    avatarContainer.appendChild(loading);
+
+    try {
+        // Create unique filename
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${currentAdmin.id}_${Date.now()}.${fileExt}`;
+        const filePath = `${currentAdmin.id}/${fileName}`;
+
+        // Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('admin-photos')
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: true
+            });
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from('admin-photos')
+            .getPublicUrl(filePath);
+
+        // Save to database
+        const { error: dbError } = await supabase
+            .from('admin_photos')
+            .upsert({
+                admin_id: currentAdmin.id,
+                photo_url: publicUrl,
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'admin_id'
+            });
+
+        if (dbError) throw dbError;
+
+        // Update UI
+        updatePhotoUI(publicUrl);
+        showToast('Photo updated successfully', 'success');
+
+    } catch (error) {
+        console.error('Error uploading photo:', error);
+        showToast('Failed to upload photo: ' + error.message, 'error');
+    } finally {
+        // Remove loading
+        const loadingEl = avatarContainer.querySelector('.photo-loading');
+        if (loadingEl) loadingEl.remove();
+
+        // Reset input
+        document.getElementById('photo-input').value = '';
+    }
+}
+
+function updatePhotoUI(url) {
+    const img = document.getElementById('admin-photo');
+    const icon = document.getElementById('admin-photo-icon');
+
+    img.src = url;
+    img.style.display = 'block';
+    icon.style.display = 'none';
+}
+
+// Load photo on page load
+async function loadAdminPhoto() {
+    try {
+        const { data, error } = await supabase
+            .from('admin_photos')
+            .select('photo_url')
+            .eq('admin_id', currentAdmin.id)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (data && data.photo_url) {
+            updatePhotoUI(data.photo_url);
+        }
+    } catch (error) {
+        console.error('Error loading photo:', error);
+    }
+}
+
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         closeEditModal();
         closePasswordModal();
+    }
+});
+
+// Profile Photo Upload Functions
+function selectPhoto() {
+    document.getElementById('photo-input').click();
+}
+
+document.getElementById('photo-input')?.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Show loading state
+    const avatarContainer = document.querySelector('.profile-avatar-large');
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'photo-loading';
+    loadingDiv.id = 'photo-spinner';
+    avatarContainer.appendChild(loadingDiv);
+
+    try {
+        if (file.size > 5 * 1024 * 1024) throw new Error('File must be less than 5MB');
+        if (!file.type.startsWith('image/')) throw new Error('Must be an image file');
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${currentAdmin.id}_${Date.now()}.${fileExt}`;
+        const filePath = `admin_profiles/${fileName}`;
+
+        // Upload to storage
+        const { error: uploadError } = await supabase.storage
+            .from('employee-assets')
+            .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from('employee-assets')
+            .getPublicUrl(filePath);
+
+        // Update admin table
+        const { error: updateError } = await supabase
+            .from('admins')
+            .update({ profile_image: publicUrl })
+            .eq('id', currentAdmin.id);
+
+        if (updateError) throw updateError;
+
+        // Also update settings adminprofile_image for dashboard compatibility
+        await supabase
+            .from('settings')
+            .upsert({
+                key: 'adminprofile_image',
+                value: publicUrl,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'key' });
+
+        currentAdmin.profile_image = publicUrl;
+
+        // Update session
+        const storage = localStorage.getItem('aarambh_session') ? localStorage : sessionStorage;
+        const session = JSON.parse(storage.getItem('aarambh_session'));
+        session.user.profile_image = publicUrl;
+        storage.setItem('aarambh_session', JSON.stringify(session));
+
+        updateProfileUI();
+        showToast('Profile photo updated', 'success');
+
+    } catch (error) {
+        console.error('Error uploading photo:', error);
+        showToast(error.message || 'Failed to update photo', 'error');
+    } finally {
+        const spinner = document.getElementById('photo-spinner');
+        if (spinner) spinner.remove();
+        e.target.value = ''; // Reset input
     }
 });

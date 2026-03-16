@@ -170,7 +170,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
     transform: translateX(-100%);
     transition: transform 0.6s ease;
 }
@@ -374,8 +374,15 @@ body {
 
 /* Animations */
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
 }
 
 .pulse {
@@ -387,15 +394,15 @@ body {
     .app-container {
         padding: 16px;
     }
-    
+
     .hero-title {
         font-size: 28px;
     }
-    
+
     .action-card {
         padding: 16px;
     }
-    
+
     .card-icon {
         width: 48px;
         height: 48px;
@@ -517,11 +524,13 @@ body {
     box-shadow: 0 0 40px rgba(59, 130, 246, 0.3);
 }
 
-#camera-video, #captured-image {
+#camera-video,
+#captured-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transform: scaleX(-1); /* Mirror effect */
+    transform: scaleX(-1);
+    /* Mirror effect */
 }
 
 .camera-overlay {
@@ -623,7 +632,8 @@ body {
     margin-bottom: 16px;
 }
 
-.retake-btn, .submit-btn-camera {
+.retake-btn,
+.submit-btn-camera {
     flex: 1;
     padding: 14px;
     border-radius: 12px;
@@ -687,9 +697,17 @@ body {
 
 /* Flash Animation */
 @keyframes flash {
-    0% { opacity: 0; }
-    50% { opacity: 1; }
-    100% { opacity: 0; }
+    0% {
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
 }
 
 .flash-effect {
@@ -714,7 +732,7 @@ body {
         width: 240px;
         height: 240px;
     }
-    
+
     .face-guide {
         width: 160px;
         height: 160px;
@@ -723,35 +741,115 @@ body {
 
 /* PWA Standalone Mode */
 @media all and (display-mode: standalone) {
-  body {
-    overscroll-behavior-y: none;
-  }
+    body {
+        overscroll-behavior-y: none;
+    }
 }
 
 /* Prevent text selection */
 * {
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
-input, textarea {
-  -webkit-user-select: text;
+input,
+textarea {
+    -webkit-user-select: text;
 }
 
 /* Hide scrollbar */
 ::-webkit-scrollbar {
-  width: 0px;
-  background: transparent;
+    width: 0px;
+    background: transparent;
 }
 
 /* iOS fixes */
 @supports (-webkit-touch-callout: none) {
-  .app-container {
-    -webkit-touch-callout: none;
-  }
+    .app-container {
+        -webkit-touch-callout: none;
+    }
 }
 
 .status-badge.completed {
     background: linear-gradient(135deg, #6b7280, #4b5563);
     color: white;
+}
+
+/* PWA Install Popup */
+.pwa-popup {
+    position: fixed;
+    bottom: -150px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    transition: bottom 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.pwa-popup.show {
+    bottom: 20px;
+}
+
+.pwa-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    object-fit: cover;
+}
+
+.pwa-content {
+    flex: 1;
+}
+
+.pwa-content h4 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.pwa-content p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.pwa-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pwa-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.pwa-install-btn {
+    background: var(--accent-green);
+    color: var(--bg-primary);
+}
+
+.pwa-install-btn:active {
+    transform: scale(0.95);
+}
+
+.pwa-close-btn {
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
 }
