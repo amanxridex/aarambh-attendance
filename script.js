@@ -39,6 +39,18 @@ async function checkAuth() {
         return;
     }
 
+    // Bind UI
+    document.getElementById('dashboard-name').textContent = currentUser.name || 'Agent';
+
+    // Bind Image (or Dicebear cartoon)
+    const avatarImg = document.getElementById('dashboard-avatar');
+    if (currentUser.profile_image) {
+        avatarImg.src = currentUser.profile_image;
+    } else {
+        avatarImg.src = `https://api.dicebear.com/7.x/adventurer/svg?seed=${currentUser.name || 'User'}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffdfbf,ffd5dc`;
+    }
+    avatarImg.style.display = 'block';
+
     // Load today's attendance status
     await loadTodayStatus();
 }

@@ -4,148 +4,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#0a0a0a">
-    <title>Aarambh Attendance</title>
-
-    <!-- Favicon -->
+    <meta name="theme-color" content="#050505">
+    <title>Aarambh Dashboard</title>
     <link rel="icon" href="assets/aarambh.ico">
     <link rel="shortcut icon" href="assets/aarambh.ico">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- PWA & Apple Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="Attendance">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Aarambh">
     <link rel="apple-touch-icon" href="assets/aarambh.ico">
     <link rel="manifest" href="manifest.json">
 </head>
 
 <body>
+    <div class="dynamic-bg">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+    </div>
+
     <div class="app-container">
         <!-- Header -->
         <header class="header">
             <div class="logo-section">
-                <div class="logo-icon">
-                    <i class="fas fa-bolt"></i>
-                </div>
+                <div class="logo-icon"><i class="fas fa-bolt"></i></div>
                 <h1 class="logo-text">AARAMBH</h1>
             </div>
             <div class="header-actions">
-                <button class="icon-btn">
-                    <i class="fas fa-search"></i>
-                </button>
-                <button class="icon-btn notification">
+                <a href="#" class="icon-btn notification">
                     <i class="fas fa-bell"></i>
                     <span class="badge">2</span>
-                </button>
-                <button class="icon-btn" onclick="window.location.href='profile.html'">
-                    <i class="fas fa-user"></i>
-                </button>
+                </a>
+                <a href="profile.html" class="icon-btn">
+                    <i class="fas fa-user-astronaut"></i>
+                </a>
             </div>
         </header>
 
         <!-- Main Content -->
         <main class="main-content">
             <div class="hero-section">
-                <h2 class="hero-title">ITS <span class="highlight">ATTENDANCE TIME</span></h2>
-                <p class="hero-subtitle">Select your attendance operation</p>
+                <div class="hero-avatar">
+                    <img id="dashboard-avatar" src="" alt="Avatar" style="display:none;">
+                </div>
+                <div class="hero-text-content">
+                    <p class="hero-subtitle">Welcome Back,</p>
+                    <h2 class="hero-title" id="dashboard-name">Agent...</h2>
+                </div>
             </div>
 
-            <!-- Action Cards -->
+            <!-- Action Grid -->
             <div class="cards-container">
-                <div class="action-card" onclick="handleAction('check-in')">
-                    <div class="card-icon green">
-                        <i class="fas fa-sign-in-alt"></i>
-                    </div>
+                <div class="action-card full-width" onclick="handleAction('check-in')">
+                    <div class="card-icon green"><i class="fas fa-fingerprint"></i></div>
                     <div class="card-content">
-                        <h3>Check In</h3>
-                        <p>Mark your arrival</p>
+                        <h3>Initiate Check-In</h3>
+                        <p>Authenticate attendance</p>
                     </div>
-                    <div class="card-arrow">
-                        <i class="fas fa-arrow-right"></i>
-                    </div>
+                    <div class="card-arrow"><i class="fas fa-chevron-right"></i></div>
                 </div>
 
-                <div class="action-card" onclick="handleAction('check-out')">
-                    <div class="card-icon blue">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </div>
+                <div class="action-card full-width" onclick="handleAction('check-out')">
+                    <div class="card-icon pink"><i class="fas fa-sign-out-alt"></i></div>
                     <div class="card-content">
-                        <h3>Check Out</h3>
-                        <p>Mark your departure</p>
+                        <h3>Terminate Shift</h3>
+                        <p>Log departure time</p>
                     </div>
-                    <div class="card-arrow">
-                        <i class="fas fa-arrow-right"></i>
-                    </div>
+                    <div class="card-arrow"><i class="fas fa-chevron-right"></i></div>
                 </div>
 
                 <div class="action-card" onclick="window.location.href='history.html'">
-                    <div class="card-icon orange">
-                        <i class="fas fa-history"></i>
-                    </div>
+                    <div class="card-icon orange"><i class="fas fa-history"></i></div>
                     <div class="card-content">
-                        <h3>History</h3>
-                        <p>View past records</p>
-                    </div>
-                    <div class="card-arrow">
-                        <i class="fas fa-arrow-right"></i>
+                        <h3>Logs</h3>
+                        <p>Time records</p>
                     </div>
                 </div>
 
                 <div class="action-card" onclick="window.location.href='statistics.html'">
-                    <div class="card-icon pink">
-                        <i class="fas fa-chart-pie"></i>
-                    </div>
+                    <div class="card-icon blue"><i class="fas fa-chart-network"></i></div>
                     <div class="card-content">
-                        <h3>Statistics</h3>
-                        <p>Analytics & Reports</p>
-                    </div>
-                    <div class="card-arrow">
-                        <i class="fas fa-arrow-right"></i>
+                        <h3>Metrics</h3>
+                        <p>Performance</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Status Section -->
+            <!-- Live Status -->
             <div class="status-section">
                 <div class="status-card">
                     <div class="status-header">
-                        <h4>Today's Status</h4>
-                        <span class="status-badge" id="status-badge">Not Checked In</span>
+                        <h4>System Status</h4>
+                        <span class="status-badge" id="status-badge">Standby</span>
                     </div>
                     <div class="status-details">
-                        <div class="status-item">
-                            <i class="fas fa-clock"></i>
-                            <span id="current-time">--:--</span>
-                        </div>
-                        <div class="status-item">
-                            <i class="fas fa-calendar"></i>
-                            <span id="current-date">--</span>
+                        <div class="status-item"><i class="fas fa-clock"></i> <span id="current-time">--:--</span></div>
+                        <div class="status-item"><i class="fas fa-calendar-alt"></i> <span id="current-date">--</span>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
-
-        <!-- Toast Notification -->
-        <div id="toast" class="toast">
-            <div class="toast-content">
-                <i class="fas fa-check-circle"></i>
-                <span id="toast-message">Action completed!</span>
-            </div>
-        </div>
-    </div> <!-- Close app-container -->
+    </div>
 
     <!-- Selfie Capture Modal -->
     <div class="modal" id="selfie-modal">
         <div class="modal-overlay" onclick="closeSelfieModal()"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fas fa-camera"></i> Capture Selfie</h3>
-                <button class="close-btn" onclick="closeSelfieModal()">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h3><i class="fas fa-eye"></i> Biometric Scan</h3>
+                <button class="close-btn" onclick="closeSelfieModal()"><i class="fas fa-times"></i></button>
             </div>
 
             <div class="camera-container">
@@ -153,15 +122,11 @@
                     <video id="camera-video" autoplay playsinline></video>
                     <canvas id="camera-canvas" style="display: none;"></canvas>
                     <img id="captured-image" style="display: none;" alt="Captured">
-
                     <div class="camera-overlay">
                         <div class="face-guide"></div>
-                        <p class="guide-text">Position your face in the circle</p>
+                        <p class="guide-text">Align Subject</p>
                     </div>
-
-                    <div class="timestamp-overlay" id="camera-timestamp">
-                        --:--:--
-                    </div>
+                    <div class="timestamp-overlay" id="camera-timestamp">--:--:--</div>
                 </div>
 
                 <div class="camera-controls" id="camera-controls">
@@ -171,24 +136,26 @@
                 </div>
 
                 <div class="preview-controls" id="preview-controls" style="display: none;">
-                    <button class="retake-btn" onclick="retakeSelfie()">
-                        <i class="fas fa-redo"></i>
-                        Retake
-                    </button>
+                    <button class="retake-btn" onclick="retakeSelfie()"><i class="fas fa-undo"></i> Reset</button>
                     <button class="submit-btn-camera" onclick="submitCheckIn()" id="submit-btn">
                         <i class="fas fa-check"></i>
-                        <span class="btn-text">Submit Check In</span>
-                        <div class="btn-loader" style="display: none;">
-                            <div class="spinner"></div>
-                        </div>
+                        <span class="btn-text">Confirm</span>
+                        <div class="btn-loader" style="display: none;"><i class="fas fa-spinner fa-spin"></i></div>
                     </button>
                 </div>
             </div>
 
             <div class="location-info" id="location-info">
-                <i class="fas fa-map-marker-alt"></i>
-                <span>Fetching location...</span>
+                <i class="fas fa-satellite"></i> <span>Connecting...</span>
             </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast">
+        <div class="toast-content">
+            <i class="fas fa-check-circle"></i>
+            <span id="toast-message">Execute</span>
         </div>
     </div>
 
@@ -200,9 +167,7 @@
                     .catch(error => console.log('SW failed:', error));
             });
         }
-        document.addEventListener('dblclick', function (event) {
-            event.preventDefault();
-        }, { passive: false });
+        document.addEventListener('dblclick', function (event) { event.preventDefault(); }, { passive: false });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
     <script>
