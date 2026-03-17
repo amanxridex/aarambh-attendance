@@ -4,205 +4,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Profile - Aarambh Attendance</title>
+    <title>Admin Dashboard UI - Aarambh</title>
     <link rel="icon" href="assets/aarambh.ico">
     <link rel="stylesheet" href="adminprofile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- PWA & Apple Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="Attendance">
+    <meta name="apple-mobile-web-app-title" content="Admin UI">
     <link rel="apple-touch-icon" href="assets/aarambh.ico">
     <link rel="manifest" href="manifest.json">
 </head>
 
 <body>
+    <div class="dynamic-bg">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+    </div>
+
     <div class="app-container">
         <!-- Header -->
         <header class="header">
-            <a href="dashboard.html" class="back-btn">
-                <i class="fas fa-arrow-left"></i>
-            </a>
-            <h1 class="page-title">PROFILE</h1>
-            <div class="header-actions">
-                <button class="icon-btn" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i>
-                </button>
-            </div>
+            <a href="dashboard.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+            <h1 class="page-title">COMMAND CENTER</h1>
+            <button class="icon-btn" onclick="logout()"><i class="fas fa-power-off"></i></button>
         </header>
 
-        <!-- Profile Header -->
-        <div class="profile-header">
-            <div class="profile-avatar-large" onclick="selectPhoto()" style="cursor: pointer; position: relative;">
-                <img id="admin-photo" src="" alt="Profile"
-                    style="width: 100%; height: 100%; object-fit: cover; border-radius: 30px; display: none;">
-                <i id="admin-photo-icon" class="fas fa-user-tie" style="font-size: 48px; color: #000;"></i>
+        <!-- Hero Profile Area -->
+        <div class="hero-profile">
+            <div class="avatar-wrapper" onclick="selectPhoto()">
+                <div class="avatar-inner">
+                    <img id="admin-photo" src="" alt="Admin Avatar" style="display: none;">
+                    <i id="admin-photo-icon" class="fas fa-user-secret"
+                        style="font-size: 50px; color: #fff; line-height: 122px; display: none;"></i>
+                </div>
                 <div class="photo-overlay">
-                    <i class="fas fa-camera"></i>
-                    <span>Change Photo</span>
+                    <i class="fas fa-camera"></i> Update
                 </div>
             </div>
             <h2 id="admin-name">Loading...</h2>
-            <p id="admin-role">System Administrator</p>
+            <span id="admin-role">System Administrator</span>
+            <input type="file" id="photo-input" accept="image/*" style="display: none;">
         </div>
 
-        <!-- Hidden file input - no camera, only gallery -->
-        <input type="file" id="photo-input" accept="image/jpeg, image/png, image/webp" capture="false"
-            style="display: none;">
-
-        <!-- Quick Stats -->
-        <div class="stats-grid-profile">
-            <div class="stat-box-profile">
-                <i class="fas fa-users"></i>
-                <span class="number" id="stat-employees">0</span>
-                <span class="label">Employees</span>
+        <!-- System Health Panel -->
+        <div class="system-health">
+            <div class="health-header">
+                <div class="health-title"><i class="fas fa-satellite-dish"></i> Database Uplink</div>
+                <div class="health-status">OPTIMAL</div>
             </div>
-            <div class="stat-box-profile">
-                <i class="fas fa-calendar-check"></i>
-                <span class="number" id="stat-attendance">0</span>
-                <span class="label">Records This Month</span>
+            <div class="health-bar-container">
+                <div class="health-fill"></div>
             </div>
         </div>
 
-        <!-- Account Info -->
-        <div class="info-card">
-            <h3><i class="fas fa-shield-alt"></i> Account Information</h3>
-            <div class="info-row">
-                <span class="info-label">
-                    <i class="fas fa-user"></i>
-                    Username
-                </span>
-                <span class="info-value" id="profile-username">--</span>
+        <!-- KPI Grid -->
+        <div class="bento-grid">
+            <div class="bento-box stats">
+                <div class="bento-icon"><i class="fas fa-network-wired"></i></div>
+                <div class="bento-num" id="stat-employees">0</div>
+                <div class="bento-label">Active Nodes</div>
             </div>
-            <div class="info-row">
-                <span class="info-label">
-                    <i class="fas fa-envelope"></i>
-                    Email
-                </span>
-                <span class="info-value" id="profile-email">--</span>
-                <button class="edit-btn" onclick="editField('email')">Edit</button>
-            </div>
-            <div class="info-row">
-                <span class="info-label">
-                    <i class="fas fa-phone"></i>
-                    Mobile
-                </span>
-                <span class="info-value" id="profile-mobile">--</span>
-                <button class="edit-btn" onclick="editField('mobile')">Edit</button>
-            </div>
-            <div class="info-row">
-                <span class="info-label">
-                    <i class="fas fa-key"></i>
-                    Password
-                </span>
-                <span class="info-value">••••••••</span>
-                <button class="edit-btn" onclick="changePassword()">Change</button>
+            <div class="bento-box stats">
+                <div class="bento-icon"><i class="fas fa-fingerprint"></i></div>
+                <div class="bento-num" id="stat-attendance">0</div>
+                <div class="bento-label">Logs Synced</div>
             </div>
         </div>
 
-        <!-- System Info -->
-        <div class="info-card">
-            <h3><i class="fas fa-server"></i> System Information</h3>
-            <div class="info-row">
-                <span class="info-label">
-                    <i class="fas fa-building"></i>
-                    Company Name
-                </span>
-                <span class="info-value" id="company-name">Aarambh Technologies</span>
-                <button class="edit-btn" onclick="editField('company')">Edit</button>
+        <!-- Identity & Security -->
+        <div class="settings-group">
+            <div class="settings-header">Identity Matrix</div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-icon"><i class="fas fa-at"></i></div>
+                    <div class="setting-text">
+                        <h4>Username</h4>
+                        <p id="profile-username">--</p>
+                    </div>
+                </div>
             </div>
-            <div class="info-row">
-                <span class="info-label">
-                    <i class="fas fa-map-marker-alt"></i>
-                    Office Location
-                </span>
-                <span class="info-value" id="office-location">New Delhi, India</span>
-                <button class="edit-btn" onclick="editField('location')">Edit</button>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-icon"><i class="fas fa-envelope-open-text"></i></div>
+                    <div class="setting-text">
+                        <h4>Secure Comm</h4>
+                        <p id="profile-email">--</p>
+                    </div>
+                </div>
+                <button class="setting-action" onclick="editField('email')">Modify</button>
             </div>
-            <div class="info-row">
-                <span class="info-label">
-                    <i class="fas fa-clock"></i>
-                    Member Since
-                </span>
-                <span class="info-value" id="member-since">--</span>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-icon"><i class="fas fa-mobile-alt"></i></div>
+                    <div class="setting-text">
+                        <h4>Terminal ID</h4>
+                        <p id="profile-mobile">--</p>
+                    </div>
+                </div>
+                <button class="setting-action" onclick="editField('mobile')">Modify</button>
             </div>
-            <div class="info-row">
-                <span class="info-label">
-                    <i class="fas fa-code-branch"></i>
-                    App Version
-                </span>
-                <span class="info-value">v2.0.0</span>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-icon"><i class="fas fa-key"></i></div>
+                    <div class="setting-text">
+                        <h4>Encryption Key</h4>
+                        <p>••••••••</p>
+                    </div>
+                </div>
+                <button class="setting-action" onclick="changePassword()">Regenerate</button>
             </div>
         </div>
 
-        <!-- Danger Zone -->
-        <div class="info-card danger-zone">
-            <h3><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
-            <button class="btn-danger" onclick="logoutAllDevices()">
-                <i class="fas fa-sign-out-alt"></i> Logout from All Devices
-            </button>
+        <!-- Corporation Data -->
+        <div class="settings-group">
+            <div class="settings-header">Enterprise Protocol</div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-icon"><i class="fas fa-building"></i></div>
+                    <div class="setting-text">
+                        <h4>Sector Name</h4>
+                        <p id="company-name">Aarambh Tech</p>
+                    </div>
+                </div>
+                <button class="setting-action" onclick="editField('company')">Modify</button>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="setting-text">
+                        <h4>Geo-Location</h4>
+                        <p id="office-location">India</p>
+                    </div>
+                </div>
+                <button class="setting-action" onclick="editField('location')">Modify</button>
+            </div>
+
+            <div class="setting-item" onclick="this.querySelector('.toggle-switch').classList.toggle('active')">
+                <div class="setting-info">
+                    <div class="setting-icon"><i class="fas fa-bell"></i></div>
+                    <div class="setting-text">
+                        <h4>Push Alerts</h4>
+                        <p>Real-time node pings</p>
+                    </div>
+                </div>
+                <div class="toggle-switch active"></div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <div class="setting-icon"><i class="fas fa-code-branch"></i></div>
+                    <div class="setting-text">
+                        <h4>System Version</h4>
+                        <p>v3.0.0 (Neon Build)</p>
+                    </div>
+                </div>
+                <span class="setting-value" id="member-since">Active</span>
+            </div>
         </div>
-    </div> <!-- Close app-container -->
+
+        <!-- Critical Action -->
+        <button class="btn-danger-new" onclick="logoutAllDevices()">
+            <i class="fas fa-skull"></i>
+            INITIATE GLOBAL LOGOUT
+        </button>
+    </div>
 
     <!-- Edit Modal -->
     <div class="modal" id="edit-modal">
         <div class="modal-overlay" onclick="closeEditModal()"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="edit-title">Edit Field</h3>
-                <button class="close-btn" onclick="closeEditModal()">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h3 id="edit-title">Data Entry</h3>
+                <button class="close-btn" onclick="closeEditModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
                     <label id="edit-label">Value</label>
-                    <input type="text" id="edit-input" placeholder="Enter new value">
+                    <input type="text" id="edit-input" placeholder="Enter override value">
                 </div>
                 <div class="modal-actions">
-                    <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
-                    <button class="btn-primary" onclick="saveEdit()">Save Changes</button>
+                    <button class="btn-secondary" onclick="closeEditModal()">Abort</button>
+                    <button class="btn-primary" onclick="saveEdit()">Execute</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Password Change Modal -->
+    <!-- Password Modal -->
     <div class="modal" id="password-modal">
         <div class="modal-overlay" onclick="closePasswordModal()"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Change Password</h3>
-                <button class="close-btn" onclick="closePasswordModal()">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h3>Regenerate Key</h3>
+                <button class="close-btn" onclick="closePasswordModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Current Password</label>
-                    <input type="password" id="current-password" placeholder="Enter current password">
+                    <label>Current Key</label>
+                    <input type="password" id="current-password" placeholder="Verify identity">
                 </div>
                 <div class="form-group">
-                    <label>New Password</label>
+                    <label>New Key</label>
                     <input type="password" id="new-password" placeholder="Min 6 characters">
                 </div>
                 <div class="form-group">
-                    <label>Confirm New Password</label>
-                    <input type="password" id="confirm-password" placeholder="Confirm new password">
+                    <label>Verify Key</label>
+                    <input type="password" id="confirm-password" placeholder="Confirm match">
                 </div>
                 <div class="modal-actions">
-                    <button class="btn-secondary" onclick="closePasswordModal()">Cancel</button>
-                    <button class="btn-primary" onclick="savePassword()">Update Password</button>
+                    <button class="btn-secondary" onclick="closePasswordModal()">Abort</button>
+                    <button class="btn-primary" onclick="savePassword()">Initialize</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast -->
+    <!-- Toast Notification -->
     <div id="toast" class="toast"></div>
 
-    <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
     <script>
         const SUPABASE_URL = 'https://zbfgytxlnnddkurhiziy.supabase.co';

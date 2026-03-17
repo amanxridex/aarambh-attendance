@@ -67,8 +67,9 @@ function updateProfileUI() {
         photoImg.style.display = 'block';
         if (photoIcon) photoIcon.style.display = 'none';
     } else if (photoImg) {
-        photoImg.style.display = 'none';
-        if (photoIcon) photoIcon.style.display = 'block';
+        photoImg.src = `https://api.dicebear.com/7.x/adventurer/svg?seed=${currentAdmin.name || 'Admin'}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffdfbf,ffd5dc`;
+        photoImg.style.display = 'block';
+        if (photoIcon) photoIcon.style.display = 'none';
     }
 
     // Basic info
