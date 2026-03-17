@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>History - Attendance App</title>
     <link rel="stylesheet" href="history.css">
+    <link rel="stylesheet" href="loader.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- PWA & Apple Meta Tags -->
@@ -14,6 +16,7 @@
     <link rel="apple-touch-icon" href="assets/aarambh.ico">
     <link rel="manifest" href="manifest.json">
 </head>
+
 <body>
     <div class="app-container">
         <!-- Header -->
@@ -54,7 +57,7 @@
                 <h3 id="selected-date">Select a date</h3>
                 <span class="status-badge" id="detail-status">--</span>
             </div>
-            
+
             <div class="time-stamps">
                 <div class="time-card">
                     <div class="time-icon in">
@@ -65,7 +68,7 @@
                         <span class="time-value" id="check-in-time">--:--</span>
                     </div>
                 </div>
-                
+
                 <div class="time-card">
                     <div class="time-icon out">
                         <i class="fas fa-sign-out-alt"></i>
@@ -81,7 +84,7 @@
                 <i class="fas fa-clock"></i>
                 <span>Duration: <strong id="duration-value">--</strong></span>
             </div>
-            
+
             <!-- Selfie Preview -->
             <div class="selfie-preview" id="selfie-preview" style="display: none;">
                 <span class="preview-label">Check-in Selfie</span>
@@ -98,5 +101,7 @@
         window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
     <script src="history.js"></script>
+    <script src="loader.js"></script>
 </body>
+
 </html>

@@ -57,6 +57,9 @@ async function checkAuth() {
 
 // Load today's attendance from Supabase - MAIN LOGIC
 async function loadTodayStatus() {
+    // Skeleton State
+    updateStatusUI('Loading...', 'ready');
+
     try {
         const today = new Date().toISOString().split('T')[0];
 

@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Statistics - Attendance App</title>
     <link rel="stylesheet" href="statistics.css">
+    <link rel="stylesheet" href="loader.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- PWA & Apple Meta Tags -->
@@ -14,6 +16,7 @@
     <link rel="apple-touch-icon" href="assets/aarambh.ico">
     <link rel="manifest" href="manifest.json">
 </head>
+
 <body>
     <div class="app-container">
         <header class="header">
@@ -98,10 +101,10 @@
             </div>
             <div class="donut-chart-wrapper">
                 <svg class="donut-chart" viewBox="0 0 200 200">
-                    <circle class="donut-bg" cx="100" cy="100" r="80"/>
-                    <circle class="donut-segment present-segment" cx="100" cy="100" r="80"/>
-                    <circle class="donut-segment half-segment" cx="100" cy="100" r="80"/>
-                    <circle class="donut-segment absent-segment" cx="100" cy="100" r="80"/>
+                    <circle class="donut-bg" cx="100" cy="100" r="80" />
+                    <circle class="donut-segment present-segment" cx="100" cy="100" r="80" />
+                    <circle class="donut-segment half-segment" cx="100" cy="100" r="80" />
+                    <circle class="donut-segment absent-segment" cx="100" cy="100" r="80" />
                 </svg>
                 <div class="donut-center">
                     <span class="donut-value" id="attendance-rate">0%</span>
@@ -127,5 +130,7 @@
         window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
     <script src="statistics.js"></script>
+    <script src="loader.js"></script>
 </body>
+
 </html>

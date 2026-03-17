@@ -58,6 +58,11 @@ async function loadOrganizationData() {
 }
 
 function processAnalytics() {
+    // Show skeleton loaders in KPIs momentarily
+    document.getElementById('kpi-total-emps').innerHTML = '<div class="skeleton-text short"></div>';
+    document.getElementById('kpi-avg-presence').innerHTML = '<div class="skeleton-text short"></div>';
+    document.getElementById('kpi-avg-hours').innerHTML = '<div class="skeleton-text short"></div>';
+
     // 1. Resolve Work Days array in range
     const startObj = new Date(dateStartStr);
     const endObj = new Date(dateEndStr);

@@ -14,20 +14,20 @@ document.addEventListener('DOMContentLoaded', () => {
 // Check authentication
 async function checkAuth() {
     const session = localStorage.getItem('aarambh_session') || sessionStorage.getItem('aarambh_session');
-    
+
     if (!session) {
         window.location.href = 'auth.html';
         return;
     }
-    
+
     const sessionData = JSON.parse(session);
     currentUser = sessionData.user;
-    
+
     if (!currentUser) {
         window.location.href = 'auth.html';
         return;
     }
-    
+
     await loadMonthData();
 }
 
@@ -36,15 +36,18 @@ async function loadMonthData() {
     try {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
-        
+
         // CORRECT: Get last day of month properly
         const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
-        
+
         const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`;
         const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayOfMonth).padStart(2, '0')}`;
-        
+
         console.log('Fetching:', startDate, 'to', endDate); // Debug
-        
+        // Add skeleton loader to grid
+        const grid = document.getElementById('dates-grid');
+        grid.innerHTML = Array(30).fill('<div class="date-card skeleton" style="border:none;"></div>').join('');
+
         const { data, error } = await supabase
             .from('attendance')
             .select('*')
@@ -52,22 +55,22 @@ async function loadMonthData() {
             .gte('date', startDate)
             .lte('date', endDate)
             .order('date', { ascending: true });
-        
+
         if (error) throw error;
-        
+
         attendanceData = {};
         data?.forEach(record => {
             attendanceData[record.date] = record;
         });
-        
+
         renderCalendar();
-        
+
         // Select today by default if in current month
         const today = new Date();
         if (today.getMonth() === month && today.getFullYear() === year) {
             selectDate(today);
         }
-        
+
     } catch (error) {
         console.error('Error loading data:', error);
         showToast('Failed to load attendance data');
@@ -79,9 +82,9 @@ function getStatus(record) {
     if (!record || !record.check_in) {
         return 'absent'; // 🔴 Red - No record
     }
-    
+
     const duration = record.duration_minutes || 0;
-    
+
     if (duration >= 240) { // 4 hours = 240 minutes
         return 'present'; // 🟢 Green - Full day (4+ hours)
     } else {
@@ -93,10 +96,10 @@ function getStatus(record) {
 function formatTime(isoString) {
     if (!isoString) return '--:--';
     const date = new Date(isoString);
-    return date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
+    return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
         minute: '2-digit',
-        hour12: false 
+        hour12: false
     });
 }
 
@@ -110,8 +113,8 @@ function formatDuration(minutes) {
 
 // Get month name
 function getMonthName(monthIndex) {
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                   'July', 'August', 'September', 'October', 'November', 'December'];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
     return months[monthIndex];
 }
 
@@ -131,19 +134,19 @@ async function changeMonth(direction) {
 function renderCalendar() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    
+
     // Update header
     document.getElementById('current-month').textContent = getMonthName(month);
     document.getElementById('current-year').textContent = year;
-    
+
     const grid = document.getElementById('dates-grid');
     grid.innerHTML = '';
-    
+
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDay = firstDay.getDay();
-    
+
     // Previous month padding
     for (let i = 0; i < startingDay; i++) {
         const emptyCell = document.createElement('div');
@@ -151,47 +154,47 @@ function renderCalendar() {
         emptyCell.style.opacity = '0.3';
         grid.appendChild(emptyCell);
     }
-    
+
     // Date cards
     const today = new Date();
     const todayKey = today.toISOString().split('T')[0];
-    
+
     for (let day = 1; day <= daysInMonth; day++) {
         const date = new Date(year, month, day);
         const dateKey = formatDateKey(date);
         const record = attendanceData[dateKey];
         const status = getStatus(record);
-        
+
         const card = document.createElement('div');
         card.className = 'date-card';
-        
+
         // Today highlight
         if (dateKey === todayKey) {
             card.classList.add('today');
         }
-        
+
         // Selected highlight
         if (selectedDate && formatDateKey(selectedDate) === dateKey) {
             card.classList.add('selected');
         }
-        
+
         // Date number
         const dateNum = document.createElement('span');
         dateNum.className = 'date-number';
         dateNum.textContent = day;
         card.appendChild(dateNum);
-        
+
         // Day name
         const dayName = document.createElement('span');
         dayName.className = 'date-day';
         dayName.textContent = getDayName(date.getDay());
         card.appendChild(dayName);
-        
+
         // Status dot
         const dot = document.createElement('div');
         dot.className = `status-dot ${status}`;
         card.appendChild(dot);
-        
+
         card.onclick = () => selectDate(date);
         grid.appendChild(card);
     }
@@ -218,7 +221,7 @@ function showDayDetails(date) {
     const dateKey = formatDateKey(date);
     const record = attendanceData[dateKey];
     const status = getStatus(record);
-    
+
     // Update header
     document.getElementById('selected-date').textContent = date.toLocaleDateString('en-US', {
         weekday: 'long',
@@ -226,11 +229,11 @@ function showDayDetails(date) {
         month: 'long',
         day: 'numeric'
     });
-    
+
     const statusBadge = document.getElementById('detail-status');
     const selfiePreview = document.getElementById('selfie-preview');
     const selfieImage = document.getElementById('selfie-image');
-    
+
     if (!record) {
         // No record - Absent
         statusBadge.textContent = 'Absent';
@@ -241,16 +244,16 @@ function showDayDetails(date) {
         selfiePreview.style.display = 'none';
     } else {
         // Has record
-        const statusText = status === 'present' ? 'Full Day' : 
-                          status === 'half-day' ? 'Half Day' : 'Absent';
-        
+        const statusText = status === 'present' ? 'Full Day' :
+            status === 'half-day' ? 'Half Day' : 'Absent';
+
         statusBadge.textContent = statusText;
         statusBadge.className = `status-badge ${status}`;
-        
+
         document.getElementById('check-in-time').textContent = formatTime(record.check_in);
         document.getElementById('check-out-time').textContent = formatTime(record.check_out);
         document.getElementById('duration-value').textContent = formatDuration(record.duration_minutes);
-        
+
         // Show selfie if available
         if (record.selfie_url) {
             selfieImage.src = record.selfie_url;
@@ -259,7 +262,7 @@ function showDayDetails(date) {
             selfiePreview.style.display = 'none';
         }
     }
-    
+
     details.classList.add('show');
 }
 

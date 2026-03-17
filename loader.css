@@ -1,0 +1,86 @@
+/* loader.css - Global Transition and Skeleton Loader Styles */
+
+/* Base Transition State for Pages */
+.page-transition {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUpIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+body.fade-out .page-transition {
+    opacity: 0 !important;
+    transform: translateY(-20px) !important;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes fadeUpIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Base Skeleton Class (Cyber-Luxury Style) */
+.skeleton {
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.03) 25%,
+            rgba(0, 243, 255, 0.08) 50%,
+            rgba(255, 255, 255, 0.03) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite linear;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    position: relative;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Skeleton Utilities */
+.skeleton-text {
+    height: 14px;
+    width: 100%;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+
+.skeleton-text.short {
+    width: 60%;
+}
+
+.skeleton-text.title {
+    height: 20px;
+    width: 40%;
+    margin-bottom: 12px;
+}
+
+.skeleton-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.skeleton-card {
+    padding: 16px;
+    border-radius: 20px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    background: var(--glass-bg, rgba(25, 25, 35, 0.4));
+}
+
+.skeleton-box {
+    width: 100%;
+    height: 100px;
+    border-radius: 16px;
+}
