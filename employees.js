@@ -32,12 +32,12 @@ async function loadTodayAttendance() {
             .from('attendance')
             .select('*')
             .eq('date', today);
-        
+
         if (error) throw error;
         data?.forEach(record => {
             todayAttendance[record.employee_id] = record;
         });
-        
+
         updateOverviewStats();
     } catch (error) {
         console.error('Error loading today attendance:', error);
@@ -49,10 +49,10 @@ function updateOverviewStats() {
         // PRESENT if checked in (don't wait for checkout)
         return a.check_in !== null && a.check_in !== undefined;
     }).length;
-    
+
     const total = employees.length;
     const absent = total - present;
-    
+
     document.getElementById('total-count').textContent = total;
     document.getElementById('present-count').textContent = present;
     document.getElementById('absent-count').textContent = absent;
@@ -64,7 +64,7 @@ async function loadEmployees() {
             .from('employees')
             .select('*')
             .order('created_at', { ascending: false });
-        
+
         if (error) throw error;
         employees = data || [];
         document.getElementById('emp-count').textContent = employees.length;
@@ -84,12 +84,12 @@ function getEmployeeStatus(empId) {
 
 function renderEmployees(filtered = employees) {
     const list = document.getElementById('employees-list');
-    
+
     if (filtered.length === 0) {
         list.innerHTML = '<div class="loading">No employees found</div>';
         return;
     }
-    
+
     list.innerHTML = filtered.map(emp => {
         const status = getEmployeeStatus(emp.id);
         const record = todayAttendance[emp.id];
@@ -97,16 +97,16 @@ function renderEmployees(filtered = employees) {
         let timeDisplay = '--';
         if (record) {
             if (record.duration_minutes) {
-                timeDisplay = `${Math.floor(record.duration_minutes/60)}h ${record.duration_minutes%60}m`;
+                timeDisplay = `${Math.floor(record.duration_minutes / 60)}h ${record.duration_minutes % 60}m`;
             } else if (record.check_in) {
                 timeDisplay = 'Present';
             }
         }
-        
+
         return `
         <div class="emp-card" onclick="openEmployeeModal('${emp.id}')">
             <div class="emp-avatar">
-                <img src="${emp.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random&color=fff&size=100`}" alt="${emp.name}">
+                <img src="${emp.profile_image || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(emp.name)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffdfbf,ffd5dc`}" alt="${emp.name}">
                 <div class="status-dot ${status}"></div>
             </div>
             <div class="emp-info">
@@ -141,26 +141,26 @@ function filterByDept(dept) {
     currentDeptFilter = dept;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     event.target.classList.add('active');
-    
+
     const query = document.getElementById('search-input').value.toLowerCase();
     filterAndRender(query, dept);
 }
 
 function filterAndRender(query, dept) {
     let filtered = employees;
-    
+
     if (dept !== 'all') {
         filtered = filtered.filter(e => e.department === dept);
     }
-    
+
     if (query) {
-        filtered = filtered.filter(emp => 
+        filtered = filtered.filter(emp =>
             emp.name.toLowerCase().includes(query) ||
             emp.emp_id.toLowerCase().includes(query) ||
             emp.username.toLowerCase().includes(query)
         );
     }
-    
+
     renderEmployees(filtered);
 }
 
@@ -169,21 +169,21 @@ async function openEmployeeModal(id) {
     currentModalDate = new Date();
     const emp = employees.find(e => e.id === id);
     if (!emp) return;
-    
+
     // Update profile header
-    document.getElementById('modal-avatar').src = emp.profile_image || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name)}&background=random&color=fff&size=200`;
+    document.getElementById('modal-avatar').src = emp.profile_image || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(emp.name)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffdfbf,ffd5dc`;
     document.getElementById('modal-name').textContent = emp.name;
     document.getElementById('modal-role').textContent = emp.designation;
     document.getElementById('modal-dept').textContent = emp.department;
     document.getElementById('modal-id').textContent = emp.emp_id;
     document.getElementById('modal-email').textContent = emp.email || 'No email';
     document.getElementById('modal-phone').textContent = emp.mobile || 'No phone';
-    
+
     const status = getEmployeeStatus(emp.id);
     document.getElementById('status-dot').className = `status-indicator ${status}`;
-    
+
     await loadModalData();
-    
+
     document.getElementById('emp-modal').classList.add('show');
     document.body.style.overflow = 'hidden';
 }
@@ -191,15 +191,15 @@ async function openEmployeeModal(id) {
 async function loadModalData() {
     const emp = employees.find(e => e.id === currentEmpId);
     if (!emp) return;
-    
+
     const year = currentModalDate.getFullYear();
     const month = currentModalDate.getMonth();
     const monthStart = `${year}-${String(month + 1).padStart(2, '0')}-01`;
     const lastDay = new Date(year, month + 1, 0).getDate();
     const monthEnd = `${year}-${String(month + 1).padStart(2, '0')}-${lastDay}`;
-    
+
     document.getElementById('modal-month').textContent = `${currentModalDate.toLocaleString('default', { month: 'long' })} ${year}`;
-    
+
     const { data: attendance } = await supabase
         .from('attendance')
         .select('*')
@@ -207,16 +207,16 @@ async function loadModalData() {
         .gte('date', monthStart)
         .lte('date', monthEnd)
         .order('date', { ascending: false });
-    
+
     // Calculate stats
     let fullDays = 0, halfDays = 0, absentDays = 0, totalHours = 0;
     const attendanceMap = {};
-    
+
     attendance?.forEach(record => {
         attendanceMap[record.date] = record;
         const duration = record.duration_minutes || 0;
         const hours = duration / 60;
-        
+
         // PRESENT if checked in (don't wait for checkout)
         if (record.check_in) {
             if (duration >= 240) {
@@ -232,18 +232,18 @@ async function loadModalData() {
             absentDays++;
         }
     });
-    
+
     // Count absents for days with no record (working days only)
     const today = new Date();
     const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
-    
+
     for (let day = 1; day <= lastDay; day++) {
         const date = new Date(year, month, day);
         // Skip weekends
         if (date.getDay() === 0 || date.getDay() === 6) continue;
-        
+
         const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        
+
         // If no record for this day, it's absent
         if (!attendanceMap[dateKey]) {
             // Only count as absent if it's in the past or today
@@ -252,28 +252,28 @@ async function loadModalData() {
             }
         }
     }
-    
+
     // Update stats
     document.getElementById('stat-present').textContent = fullDays;
     document.getElementById('stat-half').textContent = halfDays;
     document.getElementById('stat-absent').textContent = absentDays;
-    
+
     const avgHours = (fullDays + halfDays) > 0 ? (totalHours / (fullDays + halfDays)).toFixed(1) : 0;
     document.getElementById('stat-hours').textContent = `${avgHours}h`;
-    
+
     // Render calendar
     renderMiniCalendar(year, month, attendanceMap);
-    
+
     // Render timeline (last 5)
     const recent = attendance?.slice(0, 5) || [];
     document.getElementById('activity-timeline').innerHTML = recent.length ? recent.map(record => {
         const date = new Date(record.date);
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        const checkIn = record.check_in ? new Date(record.check_in).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false}) : '--:--';
-        const checkOut = record.check_out ? new Date(record.check_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false}) : '--:--';
-        const duration = record.duration_minutes ? `${Math.floor(record.duration_minutes/60)}h ${record.duration_minutes%60}m` : (record.check_in ? 'Present' : '--');
+        const checkIn = record.check_in ? new Date(record.check_in).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--';
+        const checkOut = record.check_out ? new Date(record.check_out).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--';
+        const duration = record.duration_minutes ? `${Math.floor(record.duration_minutes / 60)}h ${record.duration_minutes % 60}m` : (record.check_in ? 'Present' : '--');
         const isCheckOut = record.check_out;
-        
+
         return `
             <div class="timeline-item">
                 <div class="timeline-icon ${isCheckOut ? 'checkout' : 'checkin'}">
@@ -298,15 +298,15 @@ function renderMiniCalendar(year, month, attendanceMap) {
     const today = new Date();
     const isCurrentMonth = today.getMonth() === month && today.getFullYear() === year;
     const todayKey = today.toISOString().split('T')[0];
-    
+
     const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     let html = weekdays.map(d => `<div class="cal-day-header">${d}</div>`).join('');
-    
+
     // Empty cells
     for (let i = 0; i < firstDay; i++) {
         html += '<div class="cal-day empty"></div>';
     }
-    
+
     // Days - ALL days same rule: green if has check_in, red if not (no weekend exception)
     for (let day = 1; day <= daysInMonth; day++) {
         const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -314,10 +314,10 @@ function renderMiniCalendar(year, month, attendanceMap) {
         const isToday = isCurrentMonth && day === today.getDate();
         const dateObj = new Date(year, month, day);
         const isPastOrToday = dateObj <= today;
-        
+
         let status = '';
         let dot = '';
-        
+
         // SAME RULE FOR ALL DAYS - NO WEEKEND EXCEPTION
         if (record && record.check_in) {
             // Has check_in = PRESENT (green)
@@ -335,9 +335,9 @@ function renderMiniCalendar(year, month, attendanceMap) {
             dot = '<div class="cal-dot absent"></div>';
         }
         // Future days stay neutral (no color)
-        
+
         const todayClass = isToday ? 'today' : '';
-        
+
         html += `
             <div class="cal-day ${status} ${todayClass}" onclick="showDayDetail('${dateKey}')">
                 ${day}
@@ -345,26 +345,26 @@ function renderMiniCalendar(year, month, attendanceMap) {
             </div>
         `;
     }
-    
+
     document.getElementById('mini-calendar').innerHTML = html;
 }
 
 async function showDayDetail(dateKey) {
     const emp = employees.find(e => e.id === currentEmpId);
     if (!emp) return;
-    
+
     const { data: records } = await supabase
         .from('attendance')
         .select('*')
         .eq('employee_id', currentEmpId)
         .eq('date', dateKey);
-    
+
     const record = records?.[0];
     selectedDateData = { date: dateKey, record, emp };
-    
+
     const date = new Date(dateKey);
     const dateStr = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    
+
     // Create day modal if not exists
     let dayModal = document.getElementById('day-detail-modal');
     if (!dayModal) {
@@ -384,11 +384,11 @@ async function showDayDetail(dateKey) {
         `;
         document.body.appendChild(dayModal);
     }
-    
+
     document.getElementById('day-modal-date').textContent = dateStr;
-    
+
     let bodyHtml = '';
-    
+
     // ALL DAYS SAME RULE - NO WEEKEND EXCEPTION
     if (!record || !record.check_in) {
         // ABSENT (red) - regardless of weekend
@@ -409,10 +409,10 @@ async function showDayDetail(dateKey) {
         const status = duration >= 240 ? 'present' : 'half';
         const statusText = duration >= 240 ? 'FULL DAY' : 'HALF DAY';
         const statusIcon = duration >= 240 ? 'check-circle' : 'adjust';
-        const checkIn = new Date(record.check_in).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false});
-        const checkOut = record.check_out ? new Date(record.check_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false}) : 'Not checked out';
-        const durationText = record.duration_minutes ? `${Math.floor(record.duration_minutes/60)}h ${record.duration_minutes%60}m` : 'In Progress';
-        
+        const checkIn = new Date(record.check_in).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        const checkOut = record.check_out ? new Date(record.check_out).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'Not checked out';
+        const durationText = record.duration_minutes ? `${Math.floor(record.duration_minutes / 60)}h ${record.duration_minutes % 60}m` : 'In Progress';
+
         // Selfie
         bodyHtml += `
             <div class="selfie-container">
@@ -424,7 +424,7 @@ async function showDayDetail(dateKey) {
                 `}
             </div>
         `;
-        
+
         // Location
         if (record.location_lat && record.location_lng) {
             const mapsUrl = `https://www.google.com/maps?q=${record.location_lat},${record.location_lng}`;
@@ -442,7 +442,7 @@ async function showDayDetail(dateKey) {
                     </div>
                 </div>
             `;
-            
+
             // Try to get address
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${record.location_lat}&lon=${record.location_lng}`)
                 .then(r => r.json())
@@ -452,9 +452,9 @@ async function showDayDetail(dateKey) {
                         if (addr) addr.textContent = data.display_name;
                     }
                 })
-                .catch(() => {});
+                .catch(() => { });
         }
-        
+
         // Time grid
         bodyHtml += `
             <div class="time-grid">
@@ -468,7 +468,7 @@ async function showDayDetail(dateKey) {
                 </div>
             </div>
         `;
-        
+
         // Duration
         bodyHtml += `
             <div class="duration-box">
@@ -476,7 +476,7 @@ async function showDayDetail(dateKey) {
                 <div class="duration">${durationText}</div>
             </div>
         `;
-        
+
         // Status
         bodyHtml += `
             <div class="status-badge-large ${status}">
@@ -484,7 +484,7 @@ async function showDayDetail(dateKey) {
             </div>
         `;
     }
-    
+
     document.getElementById('day-modal-body').innerHTML = bodyHtml;
     dayModal.classList.add('show');
 }
@@ -517,17 +517,17 @@ function viewFullHistory() {
 
 async function deleteCurrentEmployee() {
     if (!currentEmpId) return;
-    
+
     const emp = employees.find(e => e.id === currentEmpId);
     const confirmMsg = `Delete ${emp?.name || 'this employee'} permanently?\n\nThis will remove all their attendance records too.`;
-    
+
     if (!confirm(confirmMsg)) return;
-    
+
     try {
         await supabase.from('attendance').delete().eq('employee_id', currentEmpId);
         const { error } = await supabase.from('employees').delete().eq('id', currentEmpId);
         if (error) throw error;
-        
+
         employees = employees.filter(e => e.id !== currentEmpId);
         document.getElementById('emp-count').textContent = employees.length;
         updateOverviewStats();
