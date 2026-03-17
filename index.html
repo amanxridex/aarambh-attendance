@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0a0a0a">
     <title>Aarambh Attendance</title>
-    
+
     <!-- Favicon -->
     <link rel="icon" href="assets/aarambh.ico">
     <link rel="shortcut icon" href="assets/aarambh.ico">
@@ -19,6 +20,7 @@
     <link rel="apple-touch-icon" href="assets/aarambh.ico">
     <link rel="manifest" href="manifest.json">
 </head>
+
 <body>
     <div class="app-container">
         <!-- Header -->
@@ -133,7 +135,7 @@
                 <span id="toast-message">Action completed!</span>
             </div>
         </div>
-    </div>
+    </div> <!-- Close app-container -->
 
     <!-- Selfie Capture Modal -->
     <div class="modal" id="selfie-modal">
@@ -145,29 +147,29 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            
+
             <div class="camera-container">
                 <div class="camera-frame">
                     <video id="camera-video" autoplay playsinline></video>
                     <canvas id="camera-canvas" style="display: none;"></canvas>
                     <img id="captured-image" style="display: none;" alt="Captured">
-                    
+
                     <div class="camera-overlay">
                         <div class="face-guide"></div>
                         <p class="guide-text">Position your face in the circle</p>
                     </div>
-                    
+
                     <div class="timestamp-overlay" id="camera-timestamp">
                         --:--:--
                     </div>
                 </div>
-                
+
                 <div class="camera-controls" id="camera-controls">
                     <button class="capture-btn" onclick="captureSelfie()" id="capture-btn">
                         <div class="capture-ring"></div>
                     </button>
                 </div>
-                
+
                 <div class="preview-controls" id="preview-controls" style="display: none;">
                     <button class="retake-btn" onclick="retakeSelfie()">
                         <i class="fas fa-redo"></i>
@@ -182,7 +184,7 @@
                     </button>
                 </div>
             </div>
-            
+
             <div class="location-info" id="location-info">
                 <i class="fas fa-map-marker-alt"></i>
                 <span>Fetching location...</span>
@@ -198,7 +200,7 @@
                     .catch(error => console.log('SW failed:', error));
             });
         }
-        document.addEventListener('dblclick', function(event) {
+        document.addEventListener('dblclick', function (event) {
             event.preventDefault();
         }, { passive: false });
     </script>
@@ -210,4 +212,5 @@
     </script>
     <script src="script.js"></script>
 </body>
+
 </html>
