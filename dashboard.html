@@ -11,31 +11,35 @@
 
     <!-- PWA & Apple Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <meta name="apple-mobile-web-app-title" content="Attendance">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Aarambh Admin">
     <link rel="apple-touch-icon" href="assets/aarambh.ico">
     <link rel="manifest" href="manifest.json">
 </head>
 
 <body>
+    <div class="dynamic-bg">
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+    </div>
+
     <div class="app-container">
         <!-- Header -->
         <header class="header">
             <div class="header-left">
-                <div class="logo-icon">
-                    <i class="fas fa-bolt"></i>
-                </div>
+                <div class="logo-icon"><i class="fas fa-bolt"></i></div>
                 <div class="header-title">
                     <h1>ADMIN DASHBOARD</h1>
                     <span>Management Portal</span>
                 </div>
             </div>
             <div class="header-actions">
-                <button class="icon-btn profile-btn" onclick="window.location.href='adminprofile.html'">
+                <button class="icon-btn" onclick="window.location.href='adminprofile.html'">
                     <i class="fas fa-user-shield"></i>
                 </button>
                 <button class="icon-btn logout-btn" onclick="logout()">
-                    <i class="fas fa-sign-out-alt"></i>
+                    <i class="fas fa-power-off"></i>
                 </button>
             </div>
         </header>
@@ -43,39 +47,33 @@
         <!-- Admin Mini Profile -->
         <div class="admin-mini-profile" onclick="window.location.href='adminprofile.html'">
             <div class="admin-avatar" id="admin-avatar">
-                <i class="fas fa-user-tie"></i>
+                <i class="fas fa-user-astronaut"></i>
             </div>
             <div class="admin-info">
                 <span class="admin-name" id="admin-name">Loading...</span>
                 <span class="admin-role">System Administrator</span>
             </div>
-            <i class="fas fa-chevron-right admin-arrow"></i>
+            <div class="admin-arrow"><i class="fas fa-chevron-right"></i></div>
         </div>
 
         <!-- Stats Overview -->
         <div class="stats-bar">
             <div class="stat-item">
-                <div class="stat-icon total">
-                    <i class="fas fa-users"></i>
-                </div>
+                <div class="stat-icon total"><i class="fas fa-users-viewfinder"></i></div>
                 <div class="stat-data">
                     <span class="stat-number" id="total-employees">0</span>
                     <span class="stat-label">Total Employees</span>
                 </div>
             </div>
             <div class="stat-item">
-                <div class="stat-icon present">
-                    <i class="fas fa-check-circle"></i>
-                </div>
+                <div class="stat-icon present"><i class="fas fa-fingerprint"></i></div>
                 <div class="stat-data">
                     <span class="stat-number present" id="present-today">0</span>
                     <span class="stat-label">Present Today</span>
                 </div>
             </div>
             <div class="stat-item">
-                <div class="stat-icon absent">
-                    <i class="fas fa-times-circle"></i>
-                </div>
+                <div class="stat-icon absent"><i class="fas fa-user-minus"></i></div>
                 <div class="stat-data">
                     <span class="stat-number absent" id="absent-today">0</span>
                     <span class="stat-label">Absent Today</span>
@@ -91,69 +89,49 @@
         <div class="dashboard-grid">
             <!-- Create Employee Card -->
             <div class="dashboard-card create-card" onclick="openCreateEmployee()">
-                <div class="card-glow"></div>
                 <div class="card-content">
-                    <div class="card-icon">
-                        <i class="fas fa-user-plus"></i>
-                    </div>
+                    <div class="card-icon"><i class="fas fa-user-plus"></i></div>
                     <div class="card-info">
                         <h2>Create Employee</h2>
                         <p>Add new team member</p>
                     </div>
-                    <div class="card-arrow">
-                        <i class="fas fa-arrow-right"></i>
-                    </div>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
             </div>
 
             <!-- View Employees Card -->
             <div class="dashboard-card view-card" onclick="window.location.href='employees.html'">
-                <div class="card-glow"></div>
                 <div class="card-content">
-                    <div class="card-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
+                    <div class="card-icon"><i class="fas fa-users"></i></div>
                     <div class="card-info">
                         <h2>View Employees</h2>
                         <p>Manage all employees</p>
                     </div>
-                    <div class="card-arrow">
-                        <i class="fas fa-arrow-right"></i>
-                    </div>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
             </div>
 
             <!-- Salaries Card -->
             <div class="dashboard-card salary-card" onclick="window.location.href='salaries.html'">
-                <div class="card-glow"></div>
                 <div class="card-content">
-                    <div class="card-icon">
-                        <i class="fas fa-money-bill-wave"></i>
-                    </div>
+                    <div class="card-icon"><i class="fas fa-wallet"></i></div>
                     <div class="card-info">
                         <h2>Salaries</h2>
                         <p>Payroll & Payments</p>
                     </div>
-                    <div class="card-arrow">
-                        <i class="fas fa-arrow-right"></i>
-                    </div>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
             </div>
 
             <!-- Attendance Reports Card -->
             <div class="dashboard-card report-card" onclick="window.location.href='reports.html'">
-                <div class="card-glow"></div>
                 <div class="card-content">
-                    <div class="card-icon">
-                        <i class="fas fa-chart-bar"></i>
-                    </div>
+                    <div class="card-icon"><i class="fas fa-chart-pie"></i></div>
                     <div class="card-info">
                         <h2>Reports</h2>
                         <p>Analytics & Insights</p>
                     </div>
-                    <div class="card-arrow">
-                        <i class="fas fa-arrow-right"></i>
-                    </div>
+                    <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
                 </div>
             </div>
         </div>
@@ -180,76 +158,84 @@
         <div class="modal-overlay" onclick="closeCreateModal()"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Create New Employee</h2>
-                <button class="close-btn" onclick="closeCreateModal()">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h2>Inject Node Data</h2>
+                <button class="close-btn" onclick="closeCreateModal()"><i class="fas fa-times"></i></button>
             </div>
             <form class="create-form" id="create-emp-form" onsubmit="saveEmployee(event)">
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Full Name *</label>
+                        <label>Identity (Full Name) *</label>
                         <input type="text" id="emp-name" placeholder="John Doe" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Employee ID *</label>
-                        <input type="text" id="emp-id" placeholder="EMP001" required>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Username *</label>
-                        <input type="text" id="emp-username" placeholder="johndoe" required>
-                        <small class="help-text">Employee will use this to login</small>
+                        <label>Asset Tag (Employee ID) *</label>
+                        <input type="text" id="emp-id" placeholder="EMP-001" required>
                     </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
-                        <label>Password *</label>
+                        <label>Terminal Login (Username) *</label>
+                        <input type="text" id="emp-username" placeholder="johndoe" required>
+                        <small class="help-text">Node access identifier</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Encryption Key (Password) *</label>
                         <input type="password" id="emp-password" placeholder="Min 6 characters" minlength="6" required>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Email (Optional)</label>
-                        <input type="email" id="emp-email" placeholder="john@company.com">
+                        <label>Signal Comm (Email)</label>
+                        <input type="email" id="emp-email" placeholder="agent@corp.com">
                     </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
-                        <label>Mobile</label>
+                        <label>Comlink (Mobile)</label>
                         <input type="tel" id="emp-mobile" placeholder="+91 98765 43210">
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Department *</label>
+                        <label>Sector (Department) *</label>
                         <select id="emp-dept" required>
-                            <option value="">Select Department</option>
-                            <option value="Engineering">Engineering</option>
-                            <option value="Design">Design</option>
-                            <option value="Marketing">Marketing</option>
-                            <option value="HR">HR</option>
-                            <option value="Sales">Sales</option>
+                            <option value="">Select Division</option>
+                            <option value="Engineering">Cybernetics</option>
+                            <option value="Design">Visuals</option>
+                            <option value="Marketing">Propaganda</option>
+                            <option value="HR">Resource Mgmt</option>
+                            <option value="Sales">Acquisitions</option>
                         </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Designation *</label>
-                        <input type="text" id="emp-designation" placeholder="Software Engineer" required>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Base Salary (Monthly) *</label>
-                        <input type="number" id="emp-salary" placeholder="50000" required>
-                        <small class="help-text">Used for automatic salary calculation</small>
+                        <label>Rank (Designation) *</label>
+                        <input type="text" id="emp-designation" placeholder="Operative" required>
                     </div>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
-                        <label>Joining Date</label>
+                        <label>Credit Allocation (Salary) *</label>
+                        <input type="number" id="emp-salary" placeholder="50000" required>
+                        <small class="help-text">Base monthly computational credits</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Activation Date (Joining)</label>
                         <input type="date" id="emp-joining" value="">
                     </div>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn-secondary" onclick="closeCreateModal()">Cancel</button>
+                    <button type="button" class="btn-secondary" onclick="closeCreateModal()">Abort</button>
                     <button type="submit" class="btn-primary" id="create-emp-btn">
-                        <i class="fas fa-plus"></i>
-                        <span class="btn-text">Create Employee</span>
+                        <i class="fas fa-satellite-dish"></i>
+                        <span class="btn-text">Execute Registration</span>
                     </button>
                 </div>
             </form>
@@ -259,7 +245,6 @@
     <!-- Toast -->
     <div id="toast" class="toast"></div>
 
-    <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
     <script>
         const SUPABASE_URL = 'https://zbfgytxlnnddkurhiziy.supabase.co';

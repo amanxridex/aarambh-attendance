@@ -39,11 +39,18 @@ async function loadAdminProfile() {
 
         if (settings && settings.adminprofile_image) {
             document.getElementById('admin-avatar').innerHTML = `
-                <img src="${settings.adminprofile_image}" alt="Admin" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">
+                <img src="${settings.adminprofile_image}" alt="Admin" style="width:100%; height:100%; border-radius:14px; object-fit:cover;">
+            `;
+        } else {
+            document.getElementById('admin-avatar').innerHTML = `
+                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=${data.user.name || 'Admin'}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffdfbf,ffd5dc" alt="Admin" style="width:100%; height:100%; border-radius:14px; object-fit:cover;">
             `;
         }
     } catch (e) {
         console.log("No custom admin avatar", e);
+        document.getElementById('admin-avatar').innerHTML = `
+            <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=${data.user.name || 'Admin'}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffdfbf,ffd5dc" alt="Admin" style="width:100%; height:100%; border-radius:14px; object-fit:cover;">
+        `;
     }
 }
 
